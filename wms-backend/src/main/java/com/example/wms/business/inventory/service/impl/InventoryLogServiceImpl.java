@@ -12,6 +12,8 @@ import com.example.wms.business.inventory.entity.WmsInventoryLog;
 import com.example.wms.business.inventory.mapper.WmsInventoryLogMapper;
 import com.example.wms.business.inventory.service.InventoryLogService;
 import com.example.wms.common.PageRsp;
+import com.example.wms.system.entity.SysUser;
+import com.example.wms.system.service.SysUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -32,6 +34,9 @@ public class InventoryLogServiceImpl extends ServiceImpl<WmsInventoryLogMapper, 
 
     @Autowired
     private WmsWarehouseService warehouseService;
+
+    @Autowired
+    private SysUserService sysUserService;
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -148,6 +153,10 @@ public class InventoryLogServiceImpl extends ServiceImpl<WmsInventoryLogMapper, 
         Map<Long, WmsWarehouse> whMap = whIds.isEmpty()
                 ? Collections.emptyMap()
                 : warehouseService.listByIds(whIds).stream().collect(Collectors.toMap(WmsWarehouse::getWarehouseId, Function.identity(), (a, b) -> a));
+        Set<Long> userIds = records.stream().map(WmsInventoryLog::getOperateBy).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, SysUser> userMap = userIds.isEmpty()
+                ? Collections.emptyMap()
+                : sysUserService.listByIds(userIds).stream().collect(Collectors.toMap(SysUser::getUserId, Function.identity(), (a, b) -> a));
         for (WmsInventoryLog log : records) {
             WmsGoodsSku sku = skuMap.get(log.getSkuId());
             if (sku != null) {
@@ -158,6 +167,19 @@ public class InventoryLogServiceImpl extends ServiceImpl<WmsInventoryLogMapper, 
             WmsWarehouse wh = whMap.get(log.getWarehouseId());
             if (wh != null) {
                 log.setWarehouseName(wh.getWarehouseName());
+            }
+            // 操作人姓名：DB 已落库则直接用，否则按 operateBy JOIN sys_user 取 真实姓名(real_name) 回退填充
+            if (log.getOperateName() == null || log.getOperateName().isEmpty()) {
+                SysUser user = userMap.get(log.getOperateBy());
+                if (user != null) {
+                    if (user.getRealName() != null && !user.getRealName().isEmpty()) {
+                        log.setOperateName(user.getRealName());
+                    } else if (user.getNickName() != null && !user.getNickName().isEmpty()) {
+                        log.setOperateName(user.getNickName());
+                    } else {
+                        log.setOperateName(user.getUserName());
+                    }
+                }
             }
             // 兼容前端字段
             log.setItemId(log.getBillItemId());

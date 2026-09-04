@@ -62,7 +62,11 @@
           ¥{{ Number(row.unitPrice || 0).toFixed(2) }}
         </template>
       </el-table-column>
-      <el-table-column prop="operateBy" label="操作人" width="100" />
+      <el-table-column label="操作人" width="100">
+        <template #default="{ row }">
+          {{ row.operateName || row.operateBy || '-' }}
+        </template>
+      </el-table-column>
       <el-table-column prop="operateTime" label="操作时间" width="160" align="center" />
     </el-table>
 

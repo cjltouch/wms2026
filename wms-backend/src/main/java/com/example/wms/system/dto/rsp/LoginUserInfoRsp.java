@@ -22,6 +22,8 @@ public class LoginUserInfoRsp implements Serializable {
 
     private String nickname;
 
+    private String realName;
+
     private String avatar;
 
     private List<String> roles;

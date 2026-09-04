@@ -27,7 +27,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Lazy
     @Autowired
-    private SysUserService sysUserService;
+    private SysUserService sysUserService;  
 
     private final JwtTokenProvider jwtTokenProvider;
 

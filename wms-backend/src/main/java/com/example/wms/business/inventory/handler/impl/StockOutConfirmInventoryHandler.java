@@ -93,6 +93,7 @@ public class StockOutConfirmInventoryHandler implements InventoryChangeHandler {
             log.setAmountChange((item.getCostPrice() != null ? item.getCostPrice() : BigDecimal.ZERO)
                     .multiply(BigDecimal.valueOf(qty)));
             log.setOperateBy(AuthContextHolder.getUserId());
+            log.setOperateName(AuthContextHolder.getNickName());
             log.setOperateTime(now);
             log.setBeforeQty(beforeQty);
             log.setAfterQty(afterQty);

@@ -52,6 +52,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         loginUser.setUserId(user.getUserId());
         loginUser.setUsername(user.getUserName());
         loginUser.setNickname(user.getNickName());
+        loginUser.setRealName(user.getRealName());
         List<String> roleKeys = sysRoleService.getRolesByUserId(userId).stream()
                 .map(r -> {
                     if (loginUser.getDataScope() == null || (r.getDataScope() != null && r.getDataScope() < loginUser.getDataScope())) {

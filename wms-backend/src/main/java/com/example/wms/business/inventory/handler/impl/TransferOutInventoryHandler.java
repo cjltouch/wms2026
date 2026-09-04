@@ -109,6 +109,7 @@ public class TransferOutInventoryHandler implements InventoryChangeHandler {
             log.setUnitPrice(costPrice);
             log.setAmountChange(subAmount);
             log.setOperateBy(AuthContextHolder.getUserId());
+            log.setOperateName(AuthContextHolder.getNickName());
             log.setOperateTime(billTime);
             log.setBeforeQty(beforeQty);
             log.setAfterQty(afterQty);

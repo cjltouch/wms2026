@@ -151,6 +151,7 @@ public class AuthController {
         rsp.setUserId(loginUser.getUserId());
         rsp.setUsername(loginUser.getUsername());
         rsp.setNickname(loginUser.getNickname());
+        rsp.setRealName(loginUser.getRealName());
         rsp.setAvatar(user != null ? user.getAvatar() : null);
         rsp.setRoles(loginUser.getRoleCodes());
         rsp.setPerms(loginUser.getPerms());

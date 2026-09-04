@@ -113,6 +113,7 @@ public class StockInInventoryHandler implements InventoryChangeHandler {
             log.setAmountChange((item.getCostPrice() != null ? item.getCostPrice() : BigDecimal.ZERO)
                     .multiply(BigDecimal.valueOf(item.getQty())));
             log.setOperateBy(AuthContextHolder.getUserId());
+            log.setOperateName(AuthContextHolder.getNickName());
             log.setOperateTime(billTime);
             log.setBeforeQty(beforeQty);
             log.setAfterQty(afterQty);

@@ -16,6 +16,7 @@ public class LoginUser implements Serializable {
     private Long userId;
     private String username;
     private String nickname;
+    private String realName;
     private List<String> warehouseIds;
     private Integer dataScope;
     private List<String> roleCodes;

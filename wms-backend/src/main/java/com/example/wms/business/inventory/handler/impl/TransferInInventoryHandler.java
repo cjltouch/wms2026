@@ -117,6 +117,7 @@ public class TransferInInventoryHandler implements InventoryChangeHandler {
             log.setUnitPrice(price);
             log.setAmountChange(addAmount);
             log.setOperateBy(AuthContextHolder.getUserId());
+            log.setOperateName(AuthContextHolder.getNickName());
             log.setOperateTime(billTime);
             log.setBeforeQty(beforeQty);
             log.setAfterQty(afterQty);
