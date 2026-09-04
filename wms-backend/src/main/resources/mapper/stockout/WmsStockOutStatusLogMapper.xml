@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.wms.business.stockout.mapper.WmsStockOutStatusLogMapper">
+
+    <!-- 按出库单ID查询状态变更日志
+         使用显式列别名将数据库字段(before_status等)映射到实体属性(fromStatus等)
+         因为 MyBatis resultType 不支持 @TableField 注解，必须手动别名 -->
+    <select id="selectByBillId" resultType="com.example.wms.business.stockout.entity.WmsStockOutStatusLog">
+        SELECT
+            log_id AS logId,
+            stock_out_id AS billId,
+            stock_out_no AS billNo,
+            before_status AS fromStatus,
+            after_status AS toStatus,
+            operate_type AS operateType,
+            operate_by AS operateBy,
+            operate_name AS operateName,
+            operate_remark AS remark,
+            operate_time AS operateTime
+        FROM wms_stock_out_status_log
+        WHERE stock_out_id = #{billId}
+        ORDER BY operate_time ASC
+    </select>
+
+</mapper>

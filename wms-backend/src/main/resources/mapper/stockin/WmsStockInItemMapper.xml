@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.wms.business.stockin.mapper.WmsStockInItemMapper">
+
+    <select id="selectByStockInId" resultType="com.example.wms.business.stockin.entity.WmsStockInItem">
+        SELECT * FROM wms_stock_in_item WHERE stock_in_id = #{stockInId} ORDER BY line_no ASC
+    </select>
+
+    <delete id="deleteByStockInId">
+        DELETE FROM wms_stock_in_item WHERE stock_in_id = #{stockInId}
+    </delete>
+
+</mapper>

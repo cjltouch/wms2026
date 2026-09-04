@@ -1,0 +1,34 @@
+# ===== 本地/系统文件 =====
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# ===== 日志 =====
+logs/
+*.log
+/tmp/
+
+# ===== 数据库备份 / 临时文件 =====
+wms_db_backup_*.sql
+/package-lock.json  # 根目录下的（前后端各自的留在各自目录）
+
+# ===== 后端（wms-backend）构建产物 =====
+wms-backend/target/
+wms-backend/.classpath
+wms-backend/.project
+wms-backend/.settings/
+wms-backend/logs/
+wms-backend/*.log
+
+# ===== 前端（wms-frontend）构建产物 & 依赖 =====
+wms-frontend/node_modules/
+wms-frontend/dist/
+wms-frontend/.DS_Store
+
+# ===== 旧静态站示例（可按需删除） =====
+untitled/node_modules/
+untitled/dist/

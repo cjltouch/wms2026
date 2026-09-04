@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.wms.business.check.mapper.WmsCheckOrderItemMapper">
+
+    <select id="selectByCheckId" resultType="com.example.wms.business.check.entity.WmsCheckOrderItem">
+        SELECT * FROM wms_check_order_item WHERE check_id = #{checkId} AND deleted = 0 ORDER BY line_no ASC
+    </select>
+
+    <delete id="deleteByCheckId">
+        DELETE FROM wms_check_order_item WHERE check_id = #{checkId}
+    </delete>
+
+</mapper>

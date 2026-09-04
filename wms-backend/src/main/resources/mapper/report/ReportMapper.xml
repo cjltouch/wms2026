@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.wms.business.report.mapper.ReportMapper">
+
+    <resultMap id="summaryMap" type="java.util.Map">
+        <result property="todayInCount" column="today_in_count" javaType="java.lang.Long"/>
+        <result property="todayOutCount" column="today_out_count" javaType="java.lang.Long"/>
+        <result property="inTransitPurchaseAmount" column="in_transit_purchase_amount" javaType="java.math.BigDecimal"/>
+        <result property="inventorySkuCount" column="inventory_sku_count" javaType="java.lang.Long"/>
+        <result property="inventoryTotalAmount" column="inventory_total_amount" javaType="java.math.BigDecimal"/>
+        <result property="expire30SkuCount" column="expire_30_sku_count" javaType="java.lang.Long"/>
+    </resultMap>
+
+    <resultMap id="trendMap" type="java.util.Map">
+        <result property="date" column="d" javaType="java.lang.String"/>
+        <result property="count" column="cnt" javaType="java.lang.Long"/>
+    </resultMap>
+
+    <resultMap id="skuRankingMap" type="java.util.Map">
+        <result property="skuId" column="sku_id" javaType="java.lang.Long"/>
+        <result property="skuCode" column="sku_code" javaType="java.lang.String"/>
+        <result property="skuName" column="sku_name" javaType="java.lang.String"/>
+        <result property="qty" column="qty" javaType="java.lang.Integer"/>
+        <result property="amount" column="amount" javaType="java.math.BigDecimal"/>
+    </resultMap>
+
+    <resultMap id="warehousePieMap" type="java.util.Map">
+        <result property="warehouseId" column="warehouse_id" javaType="java.lang.Long"/>
+        <result property="warehouseName" column="warehouse_name" javaType="java.lang.String"/>
+        <result property="qty" column="qty" javaType="java.lang.Integer"/>
+        <result property="amount" column="amount" javaType="java.math.BigDecimal"/>
+    </resultMap>
+
+    <resultMap id="abnormalMap" type="java.util.Map">
+        <result property="type" column="type" javaType="java.lang.String"/>
+        <result property="count" column="cnt" javaType="java.lang.Long"/>
+    </resultMap>
+
+    <resultMap id="reportRowMap" type="java.util.Map"/>
+
+    <select id="selectTodaySummary" resultMap="summaryMap">
+        SELECT
+            (SELECT COUNT(*) FROM wms_stock_in WHERE DATE(create_time) = CURDATE() AND deleted = 0) AS today_in_count,
+            (SELECT COUNT(*) FROM wms_stock_out WHERE DATE(create_time) = CURDATE() AND deleted = 0) AS today_out_count,
+            (SELECT IFNULL(SUM(final_amount), 0) FROM wms_purchase_order WHERE status IN (1,2) AND deleted = 0) AS in_transit_purchase_amount,
+            (SELECT COUNT(DISTINCT sku_id) FROM wms_inventory WHERE deleted = 0) AS inventory_sku_count,
+            (SELECT IFNULL(SUM(total_amount), 0) FROM wms_inventory WHERE deleted = 0) AS inventory_total_amount,
+            (SELECT COUNT(DISTINCT sku_id) FROM wms_inventory WHERE expire_date IS NOT NULL AND expire_date &lt;= DATE_ADD(NOW(), INTERVAL 30 DAY) AND deleted = 0) AS expire_30_sku_count
+    </select>
+
+    <select id="select30DayTrend" resultMap="trendMap">
+        SELECT DATE(create_time) AS d, COUNT(*) AS cnt
+        FROM
+        <choose>
+            <when test="type == 'in'">wms_stock_in</when>
+            <otherwise>wms_stock_out</otherwise>
+        </choose>
+        WHERE create_time >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND deleted = 0
+        GROUP BY DATE(create_time)
+        ORDER BY d ASC
+    </select>
+
+    <select id="selectTop10Sku" resultMap="skuRankingMap">
+        SELECT
+            i.sku_id,
+            MAX(i.sku_code) AS sku_code,
+            MAX(i.sku_name) AS sku_name,
+            SUM(i.actual_qty) AS qty,
+            <choose>
+                <when test="type == 'in'">SUM(i.subtotal)</when>
+                <otherwise>SUM(i.subtotal_sale)</otherwise>
+            </choose>
+            AS amount
+        FROM
+        <choose>
+            <when test="type == 'in'">wms_stock_in_item i</when>
+            <otherwise>wms_stock_out_item i</otherwise>
+        </choose>
+        INNER JOIN
+        <choose>
+            <when test="type == 'in'">wms_stock_in o ON i.stock_in_id = o.stock_in_id</when>
+            <otherwise>wms_stock_out o ON i.stock_out_id = o.stock_out_id</otherwise>
+        </choose>
+            AND o.deleted = 0
+        WHERE i.sku_id IS NOT NULL
+        GROUP BY i.sku_id
+        ORDER BY qty DESC
+        LIMIT 10
+    </select>
+
+    <select id="selectWarehousePie" resultMap="warehousePieMap">
+        SELECT
+            i.warehouse_id,
+            MAX(w.warehouse_name) AS warehouse_name,
+            SUM(i.quantity) AS qty,
+            SUM(i.total_amount) AS amount
+        FROM wms_inventory i
+        LEFT JOIN wms_warehouse w ON i.warehouse_id = w.warehouse_id AND w.deleted = 0
+        WHERE i.deleted = 0
+        GROUP BY i.warehouse_id
+    </select>
+
+    <select id="selectAbnormalSummary" resultMap="abnormalMap">
+        SELECT 'expire_30' AS type, COUNT(*) AS cnt
+        FROM wms_inventory WHERE expire_date IS NOT NULL AND expire_date &lt;= DATE_ADD(NOW(), INTERVAL 30 DAY) AND deleted = 0
+        UNION ALL
+        SELECT 'zero_stock' AS type, COUNT(*) AS cnt
+        FROM wms_inventory WHERE quantity = 0 AND deleted = 0
+        UNION ALL
+        SELECT 'negative_stock' AS type, COUNT(*) AS cnt
+        FROM wms_inventory WHERE quantity &lt; 0 AND deleted = 0
+        UNION ALL
+        SELECT 'draft_over_3d' AS type, COUNT(*) AS cnt
+        FROM wms_stock_in WHERE status = 0 AND create_time &lt;= DATE_SUB(NOW(), INTERVAL 3 DAY) AND deleted = 0
+    </select>
+
+    <select id="selectPurchaseReconcile" resultMap="reportRowMap">
+        SELECT
+            po.purchase_no,
+            po.create_time AS purchase_time,
+            s.supplier_name,
+            w.warehouse_name,
+            poi.line_no,
+            poi.sku_code,
+            poi.sku_name,
+            poi.spec_text,
+            poi.quantity AS order_qty,
+            poi.delivered_qty,
+            poi.unreceived_qty,
+            poi.purchase_price,
+            poi.subtotal
+        FROM wms_purchase_order po
+        LEFT JOIN wms_supplier s ON po.supplier_id = s.supplier_id AND s.deleted = 0
+        LEFT JOIN wms_warehouse w ON po.warehouse_id = w.warehouse_id AND w.deleted = 0
+        LEFT JOIN wms_purchase_order_item poi ON po.purchase_id = poi.purchase_id
+        WHERE po.deleted = 0
+        <if test="params != null">
+            <if test="params.purchaseNo != null and params.purchaseNo != ''">
+                AND po.purchase_no LIKE CONCAT('%', #{params.purchaseNo}, '%')
+            </if>
+            <if test="params.supplierId != null">
+                AND po.supplier_id = #{params.supplierId}
+            </if>
+        </if>
+        ORDER BY po.create_time DESC, poi.line_no ASC
+    </select>
+
+    <select id="selectStockInDetail" resultMap="reportRowMap">
+        SELECT
+            si.stock_in_no,
+            si.create_time AS in_time,
+            CASE si.type
+                WHEN 1 THEN '采购' WHEN 2 THEN '调拨' WHEN 3 THEN '生产'
+                WHEN 4 THEN '盘盈' WHEN 5 THEN '其他' WHEN 6 THEN '销售退货' WHEN 7 THEN '拒收退货'
+                ELSE '未知' END AS type_name,
+            si.source_bill_no,
+            w.warehouse_name,
+            s.supplier_name,
+            sii.line_no,
+            sii.sku_code,
+            sii.sku_name,
+            sii.spec_text,
+            sii.unit_name,
+            sii.expected_qty,
+            sii.actual_qty,
+            sii.cost_price,
+            sii.subtotal,
+            sii.batch_no,
+            sii.location_code
+        FROM wms_stock_in si
+        LEFT JOIN wms_warehouse w ON si.warehouse_id = w.warehouse_id AND w.deleted = 0
+        LEFT JOIN wms_supplier s ON si.supplier_id = s.supplier_id AND s.deleted = 0
+        LEFT JOIN wms_stock_in_item sii ON si.stock_in_id = sii.stock_in_id
+        WHERE si.deleted = 0
+        <if test="params != null">
+            <if test="params.stockInNo != null and params.stockInNo != ''">
+                AND si.stock_in_no LIKE CONCAT('%', #{params.stockInNo}, '%')
+            </if>
+            <if test="params.warehouseId != null">
+                AND si.warehouse_id = #{params.warehouseId}
+            </if>
+            <if test="params.dateRangeStart != null">
+                AND si.create_time >= #{params.dateRangeStart}
+            </if>
+            <if test="params.dateRangeEnd != null">
+                AND si.create_time &lt;= #{params.dateRangeEnd}
+            </if>
+        </if>
+        ORDER BY si.create_time DESC, sii.line_no ASC
+    </select>
+
+    <select id="selectStockOutDetail" resultMap="reportRowMap">
+        SELECT
+            so.stock_out_no,
+            so.create_time AS out_time,
+            CASE so.type WHEN 1 THEN '销售' WHEN 2 THEN '调拨' WHEN 3 THEN '生产' WHEN 4 THEN '损耗' WHEN 5 THEN '其他' ELSE '未知' END AS type_name,
+            so.source_bill_no,
+            w.warehouse_name,
+            soi.line_no,
+            soi.sku_code,
+            soi.sku_name,
+            soi.spec_text,
+            soi.unit_name,
+            soi.expected_qty,
+            soi.actual_qty,
+            soi.cost_price,
+            soi.subtotal_cost,
+            soi.sale_price,
+            soi.subtotal_sale
+        FROM wms_stock_out so
+        LEFT JOIN wms_warehouse w ON so.warehouse_id = w.warehouse_id AND w.deleted = 0
+        LEFT JOIN wms_stock_out_item soi ON so.stock_out_id = soi.stock_out_id
+        WHERE so.deleted = 0
+        <if test="params != null">
+            <if test="params.stockOutNo != null and params.stockOutNo != ''">
+                AND so.stock_out_no LIKE CONCAT('%', #{params.stockOutNo}, '%')
+            </if>
+            <if test="params.warehouseId != null">
+                AND so.warehouse_id = #{params.warehouseId}
+            </if>
+            <if test="params.dateRangeStart != null">
+                AND so.create_time >= #{params.dateRangeStart}
+            </if>
+            <if test="params.dateRangeEnd != null">
+                AND so.create_time &lt;= #{params.dateRangeEnd}
+            </if>
+        </if>
+        ORDER BY so.create_time DESC, soi.line_no ASC
+    </select>
+
+    <select id="selectInventoryBalance" resultMap="reportRowMap">
+        SELECT
+            w.warehouse_name,
+            a.area_name,
+            l.location_code,
+            i.sku_code,
+            i.sku_name,
+            i.spec_text,
+            u.unit_name,
+            i.batch_no,
+            i.quantity,
+            i.locked_qty,
+            i.available_qty,
+            i.cost_price,
+            i.total_amount,
+            i.expire_date
+        FROM wms_inventory i
+        LEFT JOIN wms_warehouse w ON i.warehouse_id = w.warehouse_id AND w.deleted = 0
+        LEFT JOIN wms_area a ON i.area_id = a.area_id AND a.deleted = 0
+        LEFT JOIN wms_location l ON i.location_id = l.location_id AND l.deleted = 0
+        LEFT JOIN wms_unit u ON i.unit_id = u.unit_id AND u.deleted = 0
+        WHERE i.deleted = 0
+        <if test="params != null">
+            <if test="params.warehouseId != null">
+                AND i.warehouse_id = #{params.warehouseId}
+            </if>
+            <if test="params.skuCode != null and params.skuCode != ''">
+                AND i.sku_code LIKE CONCAT('%', #{params.skuCode}, '%')
+            </if>
+        </if>
+        ORDER BY w.warehouse_name, i.sku_code
+    </select>
+
+    <select id="selectInventoryBatch" resultMap="reportRowMap">
+        SELECT
+            w.warehouse_name,
+            i.sku_code,
+            i.sku_name,
+            i.batch_no,
+            i.produce_date,
+            i.expire_date,
+            i.quantity,
+            i.cost_price,
+            i.total_amount
+        FROM wms_inventory i
+        LEFT JOIN wms_warehouse w ON i.warehouse_id = w.warehouse_id AND w.deleted = 0
+        WHERE i.deleted = 0 AND i.batch_no IS NOT NULL
+        <if test="params != null">
+            <if test="params.warehouseId != null">
+                AND i.warehouse_id = #{params.warehouseId}
+            </if>
+            <if test="params.skuCode != null and params.skuCode != ''">
+                AND i.sku_code LIKE CONCAT('%', #{params.skuCode}, '%')
+            </if>
+        </if>
+        ORDER BY i.expire_date ASC, i.sku_code ASC
+    </select>
+
+    <select id="selectExpireWarning" resultMap="reportRowMap">
+        SELECT
+            w.warehouse_name,
+            i.sku_code,
+            i.sku_name,
+            i.spec_text,
+            i.batch_no,
+            i.expire_date,
+            DATEDIFF(i.expire_date, NOW()) AS remain_days,
+            i.quantity,
+            i.cost_price,
+            i.total_amount
+        FROM wms_inventory i
+        LEFT JOIN wms_warehouse w ON i.warehouse_id = w.warehouse_id AND w.deleted = 0
+        WHERE i.deleted = 0
+          AND i.expire_date IS NOT NULL
+        <if test="params != null and params.days != null">
+          AND DATEDIFF(i.expire_date, NOW()) &lt;= #{params.days}
+        </if>
+        <if test="params == null or params.days == null">
+          AND DATEDIFF(i.expire_date, NOW()) &lt;= 30
+        </if>
+        ORDER BY remain_days ASC, i.sku_code ASC
+    </select>
+
+</mapper>

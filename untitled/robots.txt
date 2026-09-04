@@ -1,0 +1,5 @@
+# www.robotstxt.org/
+
+# Allow crawling of all content   RK20260818003	2026-08-18	139	SPFZ-DX19679	夏日凉感舒适短袖T恤（19679）	件	30	1号
+User-agent: *
+Disallow:

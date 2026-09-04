@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.wms.business.loss.mapper.WmsLossOrderItemMapper">
+
+    <select id="selectByLossId" resultType="com.example.wms.business.loss.entity.WmsLossOrderItem">
+        SELECT * FROM wms_loss_order_item WHERE loss_id = #{lossId} AND deleted = 0 ORDER BY line_no ASC
+    </select>
+
+    <delete id="deleteByLossId">
+        DELETE FROM wms_loss_order_item WHERE loss_id = #{lossId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图片打印排版工具【终极安全边距版】</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      background-color: #f5f7fa;
+      padding-left: 280px;
+      min-height: 100vh;
+    }
+
+    /* 左侧固定操作面板 */
+    .control-panel {
+      width: 260px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      background: white;
+      padding: 20px;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .upload-box {
+      border: 2px dashed #409eff;
+      border-radius: 8px;
+      padding: 20px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .upload-box:hover {
+      background-color: #f0f7ff;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .upload-text {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    #printBtn {
+      background-color: #409eff;
+      color: white;
+    }
+    #clearBtn {
+      background-color: #f56c6c;
+      color: white;
+    }
+    button.rotate-btn{
+      background:#67c23a;
+      color:#fff;
+      font-size:12px;
+      padding:4px 8px;
+    }
+    button.del-btn{
+      background:#e6a23c;
+      color:#fff;
+      font-size:12px;
+      padding:4px 8px;
+    }
+
+    button:disabled {
+      background-color: #ccc !important;
+      cursor: not-allowed;
+    }
+
+    .tip-text {
+      font-size: 12px;
+      color: #888;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    /* 右侧打印预览 */
+    .print-preview {
+      width: 100%;
+      padding: 20px;
+      margin: 0 auto;
+    }
+
+    /* A4 纸张 210mm×297mm */
+    .a4-page {
+      width: 210mm;
+      height: 297mm;
+      background: white;
+      margin: 0 auto 20px;
+      position: relative;
+      box-shadow: 0 0 8px rgba(0,0,0,0.15);
+      page-break-after: always;
+    }
+
+    /* A4 半区容器：内部自动留 25px 安全边距 */
+    .top-area, .bottom-area {
+      width: 100%;
+      height: 49.5%;
+      position: absolute;
+      left: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #409eff;
+      padding: 25px; /* ✅ 核心：四边留 25px 安全距离 */
+    }
+    .top-area { top: 0; }
+    .bottom-area { bottom: 0; }
+
+    /* 裁剪线 + 文字 */
+    .cut-line-wrap {
+      width: 100%;
+      position: absolute;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+    }
+    .cut-line {
+      flex: 1;
+      height: 1px;
+      background: #000;
+      background-image: linear-gradient(to right, #000 4px, transparent 4px);
+      background-size: 8px 1px;
+    }
+    .cut-text{
+      padding: 0 10px;
+      font-size: 11px;
+      white-space: nowrap;
+      color: #333;
+    }
+
+    /* 图片容器：严格控制尺寸范围 */
+    .img-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .print-img {
+      display: block;
+      object-fit: contain;
+    }
+    .img-ctrl{
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      z-index: 10;
+    }
+
+    /* 打印样式 */
+    @media print {
+      body { padding: 0 !important; background: #fff; }
+      .control-panel { display: none !important; }
+      .print-preview { padding: 0 !important; }
+      .a4-page { box-shadow: none !important; margin: 0 !important; }
+      .img-ctrl { display: none !important; }
+      .top-area, .bottom-area { border: none !important; padding:0 !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 左侧功能栏 -->
+<div class="control-panel">
+  <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+    <p class="upload-text">📁 点击上传<br>图片 / ZIP 压缩包</p>
+  </div>
+  <input type="file" id="fileInput" multiple accept="image/*,.zip">
+
+  <div class="btn-group">
+    <button id="printBtn" disabled onclick="printPages()">🖨️ 一键打印</button>
+    <button id="clearBtn" onclick="clearAll()">🗑️ 清空全部</button>
+  </div>
+
+  <div class="tip-text">
+    ✔ 图片默认向左旋转90°<br>
+    ✔ 旋转后宽度：700~770px<br>
+    ✔ 距离边缘最少 25px<br>
+    ✔ 等比例、不拉伸、不溢出
+  </div>
+</div>
+
+<!-- 预览区 -->
+<div class="print-preview" id="printPreview"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+  const MIN_WIDTH = 700;   // 旋转后最小宽度
+  const MAX_WIDTH = 770;   // 旋转后最大宽度
+  let images = [];
+  const printPreview = document.getElementById('printPreview');
+  const printBtn = document.getElementById('printBtn');
+  const fileInput = document.getElementById('fileInput');
+
+  // 上传文件
+  fileInput.onchange = async e => {
+    for(let file of e.target.files) {
+      if(file.type.startsWith('image/')) await addImage(file);
+      else if(file.name.endsWith('.zip')) await unzip(file);
+    }
+    renderAll();
+    printBtn.disabled = images.length === 0;
+  };
+
+  // 读取图片并记录原始尺寸
+  function addImage(file) {
+    return new Promise(res => {
+      const img = new Image();
+      img.onload = () => {
+        images.push({
+          src: img.src,
+          rot: 270,
+          w: img.naturalWidth,
+          h: img.naturalHeight
+        });
+        res();
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  // 解压 ZIP
+  async function unzip(file) {
+    const zip = await JSZip.loadAsync(file);
+    for(let name in zip.files) {
+      const f = zip.files[name];
+      if(!f.dir && /\.(jpg|jpeg|png|gif)$/i.test(name)) {
+        const blob = await f.async('blob');
+        await addImage(blob);
+      }
+    }
+  }
+
+  // 旋转
+  function rotateItem(i) {
+    images[i].rot = (images[i].rot + 90) % 360;
+    renderAll();
+  }
+
+  // 删除
+  function deleteItem(i) {
+    images.splice(i, 1);
+    renderAll();
+    printBtn.disabled = images.length === 0;
+  }
+
+  // 渲染所有页面
+  function renderAll() {
+    printPreview.innerHTML = '';
+    const pages = Math.ceil(images.length / 2);
+    for(let p=0; p<pages; p++) {
+      const page = document.createElement('div');
+      page.className = 'a4-page';
+
+      const topArea = document.createElement('div');
+      topArea.className = 'top-area';
+      if(images[p*2]) topArea.appendChild(createImgDom(p*2));
+
+      const botArea = document.createElement('div');
+      botArea.className = 'bottom-area';
+      if(images[p*2+1]) botArea.appendChild(createImgDom(p*2+1));
+
+      const line = document.createElement('div');
+      line.className = 'cut-line-wrap';
+      line.innerHTML = `
+                <div class="cut-line"></div>
+                <span class="cut-text">← 从此处剪开 →</span>
+                <div class="cut-line"></div>
+            `;
+
+      page.append(topArea, botArea, line);
+      printPreview.appendChild(page);
+    }
+  }
+
+  // 【核心】创建带精准尺寸的图片
+  function createImgDom(i) {
+    const item = images[i];
+    const isRotate90 = item.rot === 90 || item.rot === 270;
+
+    // 原始宽高
+    let w = item.w;
+    let h = item.h;
+
+    // 旋转 90/270 度 → 宽高互换
+    if (isRotate90) [w, h] = [h, w];
+
+    // 计算目标宽度（700~770 之间）
+    let finalW = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, w));
+    let finalH = (finalW / w) * h;
+
+    // 容器
+    const box = document.createElement('div');
+    box.className = 'img-box';
+    box.style.width = finalW + 'px';
+    box.style.height = finalH + 'px';
+
+    // 控制按钮
+    const ctrl = document.createElement('div');
+    ctrl.className = 'img-ctrl';
+    ctrl.innerHTML = `
+            <button class="rotate-btn" onclick="rotateItem(${i})">旋转</button>
+            <button class="del-btn" onclick="deleteItem(${i})">删除</button>
+        `;
+
+    // 图片
+    const img = document.createElement('img');
+    img.className = 'print-img';
+    img.src = item.src;
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.transform = `rotate(${item.rot}deg)`;
+
+    box.append(ctrl, img);
+    return box;
+  }
+
+  // 打印
+  function printPages() { window.print(); }
+
+  // 清空
+  function clearAll() {
+    images = [];
+    printPreview.innerHTML = '';
+    printBtn.disabled = true;
+    fileInput.value = '';
+  }
+</script>
+</body>
+</html>

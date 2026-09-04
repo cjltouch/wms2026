@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.wms.business.inventory.mapper.WmsInventoryMapper">
+
+    <resultMap id="InventoryMap" type="com.example.wms.business.inventory.entity.WmsInventory">
+        <id column="inventory_id" property="inventoryId"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="sku_id" property="skuId"/>
+        <result column="location_id" property="locationId"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="produce_date" property="produceDate"/>
+        <result column="expire_date" property="expireDate"/>
+        <result column="supplier_batch" property="supplierBatch"/>
+        <result column="quantity" property="quantity"/>
+        <result column="locked_qty" property="lockedQty"/>
+        <result column="available_qty" property="availableQty"/>
+        <result column="cost_price" property="costPrice"/>
+        <result column="total_amount" property="totalAmount"/>
+        <result column="last_in_time" property="lastInTime"/>
+        <result column="last_out_time" property="lastOutTime"/>
+    </resultMap>
+
+</mapper>
