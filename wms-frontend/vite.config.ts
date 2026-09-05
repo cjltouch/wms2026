@@ -24,6 +24,8 @@ export default defineConfig({
     }
   },
   server: {
+    host: true,                  // 监听所有网卡，局域网可通过本机 IP 访问
+    allowedHosts: true,          // 允许所有主机（含 Cloudflare Tunnel 公网域名）
     port: 3000,
     proxy: {
       '/wms-api': {
