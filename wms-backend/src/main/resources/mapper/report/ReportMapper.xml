@@ -20,6 +20,7 @@
         <result property="skuId" column="sku_id" javaType="java.lang.Long"/>
         <result property="skuCode" column="sku_code" javaType="java.lang.String"/>
         <result property="skuName" column="sku_name" javaType="java.lang.String"/>
+        <result property="innerCode" column="inner_code" javaType="java.lang.String"/>
         <result property="qty" column="qty" javaType="java.lang.Integer"/>
         <result property="amount" column="amount" javaType="java.math.BigDecimal"/>
     </resultMap>
