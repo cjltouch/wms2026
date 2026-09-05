@@ -65,6 +65,7 @@
             i.sku_id,
             MAX(i.sku_code) AS sku_code,
             MAX(i.sku_name) AS sku_name,
+            MAX(s.inner_code) AS inner_code,
             SUM(i.actual_qty) AS qty,
             <choose>
                 <when test="type == 'in'">SUM(i.subtotal)</when>
@@ -82,6 +83,7 @@
             <otherwise>wms_stock_out o ON i.stock_out_id = o.stock_out_id</otherwise>
         </choose>
             AND o.deleted = 0
+        LEFT JOIN wms_goods_sku s ON i.sku_id = s.sku_id
         WHERE i.sku_id IS NOT NULL
         GROUP BY i.sku_id
         ORDER BY qty DESC

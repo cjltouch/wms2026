@@ -47,9 +47,15 @@
         <el-card shadow="hover">
           <template #header>出库TOP10商品</template>
           <el-table :data="topOutSku" size="small" stripe>
-            <el-table-column type="index" label="#" width="50" />
+            <el-table-column type="index" label="#" width="45" />
+            <el-table-column prop="innerCode" label="内部编码" width="90" show-overflow-tooltip>
+              <template #default="{ row }">{{ row.innerCode || '-' }}</template>
+            </el-table-column>
+            <el-table-column prop="skuCode" label="SKU编码" width="120" show-overflow-tooltip>
+              <template #default="{ row }">{{ row.skuCode || '-' }}</template>
+            </el-table-column>
             <el-table-column prop="skuName" label="商品名称" show-overflow-tooltip />
-            <el-table-column prop="totalQty" label="出库数量" width="100" align="right" />
+            <el-table-column prop="qty" label="出库数量" width="90" align="right" />
           </el-table>
         </el-card>
       </el-col>
@@ -108,8 +114,8 @@ async function loadTrend() {
     const outData = data.map((d: any) => d.stockOutQty || 0)
     chart.setOption({
       tooltip: { trigger: 'axis' },
-      legend: { data: ['入库', '出库'] },
-      grid: { left: 40, right: 20, top: 40, bottom: 30 },
+      legend: { data: ['入库', '出库'], bottom: 0, left: 'center' },
+      grid: { left: 40, right: 20, top: 20, bottom: 55 },
       xAxis: { type: 'category', data: dates },
       yAxis: { type: 'value' },
       series: [

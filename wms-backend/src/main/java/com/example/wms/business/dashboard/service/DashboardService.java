@@ -121,6 +121,7 @@ public class DashboardService {
             o.put("skuId", r.get("skuId"));
             o.put("skuCode", r.getOrDefault("skuCode", ""));
             o.put("skuName", r.getOrDefault("skuName", ""));
+            o.put("innerCode", r.getOrDefault("innerCode", ""));
             o.put("qty", toLong(r.getOrDefault("qty", 0L)));
             o.put("amount", toBigDecimal(r.getOrDefault("amount", BigDecimal.ZERO)));
             out.add(o);
