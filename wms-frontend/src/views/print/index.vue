@@ -92,24 +92,32 @@
           <!-- 备注 -->
           <div class="remark"><b>备注：</b>{{ remark || ' ' }}</div>
 
-          <!-- 签字区 -->
-          <div class="sign-area">
-            <div v-for="(s, si) in signatures" :key="si" class="sign-item">
-              <span class="sign-role">{{ s.role }}：</span>
-              <span class="sign-line">{{ s.name || '' }}</span>
+          <!-- 签字区整体（含单据编号，避免跨页时无法识别单据） -->
+          <div class="sign-block">
+            <!-- 单据编号：跨页时签字人可据此确认所属单据 -->
+            <div class="bill-no-bar">
+              <b>{{ billType === 'stock-in' ? '入库单号' : '出库单号' }}：{{ billNo }}</b>
             </div>
-            <div class="sign-item">
-              <span class="sign-role">日期：</span>
-              <span class="sign-line date-line"></span>年
-              <span class="sign-line date-short"></span>月
-              <span class="sign-line date-short"></span>日
-            </div>
-          </div>
 
-          <!-- 联次用途与打印时间 -->
-          <div class="copy-foot">
-            <span>本联用途：<b :style="{ color: copy.color }">{{ copy.desc }}</b></span>
-            <span>打印时间：{{ printTime }}</span>
+            <!-- 签字区 -->
+            <div class="sign-area">
+              <div v-for="(s, si) in signatures" :key="si" class="sign-item">
+                <span class="sign-role">{{ s.role }}：</span>
+                <span class="sign-line">{{ s.name || '' }}</span>
+              </div>
+              <div class="sign-item">
+                <span class="sign-role">日期：</span>
+                <span class="sign-line date-line"></span>年
+                <span class="sign-line date-short"></span>月
+                <span class="sign-line date-short"></span>日
+              </div>
+            </div>
+
+            <!-- 联次用途与打印时间 -->
+            <div class="copy-foot">
+              <span>本联用途：<b :style="{ color: copy.color }">{{ copy.desc }}</b></span>
+              <span>打印时间：{{ printTime }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -152,6 +160,7 @@ const columns = ref<Col[]>([])
 const items = ref<any[]>([])
 const totals = ref<{ label: string; value: any }[]>([])
 const remark = ref('')
+const billNo = ref('')
 const signatures = ref<{ role: string; name?: string }[]>([])
 const printTime = ref('')
 
@@ -226,6 +235,7 @@ async function buildStockIn(names: any) {
   const order = res.data?.order || {}
   const list = res.data?.items || []
   title.value = '入库单'
+  billNo.value = order.stockInNo || '-'
   meta.value = [
     { label: '入库单号', value: order.stockInNo },
     { label: '入库类型', value: typeText(order.type) },
@@ -271,6 +281,7 @@ async function buildStockOut(names: any) {
   const order = res.data?.order || {}
   const list = res.data?.items || []
   title.value = '出库单'
+  billNo.value = order.stockOutNo || '-'
   meta.value = [
     { label: '出库单号', value: order.stockOutNo },
     { label: '出库类型', value: outTypeText(order.type) },
@@ -499,6 +510,15 @@ onMounted(loadData)
   margin-bottom: 18px;
 }
 
+/* 单据编号栏：跨页时签字区若单独成页，可据此确认所属单据 */
+.bill-no-bar {
+  font-size: 13px;
+  color: #000;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #999;
+}
+
 .sign-area {
   display: flex;
   flex-wrap: wrap;
@@ -571,6 +591,17 @@ onMounted(loadData)
     width: 100%;
     box-shadow: none;
     padding: 0;
+  }
+
+  /* 明细表格表头在跨页时重复显示 */
+  .items-table thead {
+    display: table-header-group;
+  }
+
+  /* 签字区整体（单号+签字+底部信息）尽量不被拆分到两页 */
+  .sign-block {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 }
 </style>

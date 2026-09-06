@@ -434,7 +434,11 @@ async function handleEdit(row: any) {
     const data = res.data || {}
     const order = data.order || data // 兼容旧接口直接返回 order 的情况
     Object.assign(form, order)
-    form.items = data.items || order.items || []
+    // 后端明细返回 expectedQty/actualQty，编辑弹窗数量列绑定 quantity，需映射
+    form.items = (data.items || order.items || []).map((d: any) => ({
+      ...d,
+      quantity: d.quantity ?? (d.actualQty ?? d.expectedQty ?? 0),
+    }))
     form.stockOutId = order.stockOutId
     // 把已有明细的商品塞入 skuOptions，使 el-select 能回显商品名称
     skuOptions.value = form.items.map((d: any) => ({ skuId: d.skuId, skuCode: d.skuCode, skuName: d.skuName }))
