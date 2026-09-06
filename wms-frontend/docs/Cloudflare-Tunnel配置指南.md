@@ -22,13 +22,13 @@
             [本机 cloudflared 进程]
                     │
                     ▼
-            [本机 Vite 前端 :3000] ──proxy──> [本机 Spring Boot :8080]
+            [本机 Vite 前端 :3001] ──proxy──> [本机 Spring Boot :8081]
 ```
 
 关键点：
 - `cloudflared` 只发起**出站**连接到 Cloudflare 边缘，不需要在路由器/防火墙开入站端口。
 - 公网用户访问 `trycloudflare.com` 子域，流量被 Cloudflare 转发到本机。
-- Vite 代理 `/wms-api/**` 到 `127.0.0.1:8080`，所以**只需暴露前端 3000**，后端自动跟随。
+- Vite 代理 `/wms-api/**` 到 `127.0.0.1:8081`，所以**只需暴露前端 3001**，后端自动跟随。
 
 ---
 
@@ -51,10 +51,10 @@ cloudflared --version
 server: {
   host: true,                  // 监听所有网卡（局域网也要）
   allowedHosts: true,          // ← 关键：允许所有主机名（含 trycloudflare.com 公网域名）
-  port: 3000,
+  port: 3001,
   proxy: {
     '/wms-api': {
-      target: 'http://127.0.0.1:8080',
+      target: 'http://127.0.0.1:8081',
       changeOrigin: true
     }
   }
@@ -84,21 +84,21 @@ sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
 参考 `docs/局域网访问指南.md` 启动服务，或用脚本：
 
 ```bash
-./scripts/start-lan.sh   # 启动后端 8080 + 前端 3000
+./scripts/start-lan.sh   # 启动后端 8081 + 前端 3001
 ```
 
 确认本地可访问：
 
 ```bash
-curl -I http://localhost:3000/                                       # 前端
-curl -I http://localhost:8080/wms-api/api/system/auth/captcha        # 后端
+curl -I http://localhost:3001/                                       # 前端
+curl -I http://localhost:8081/wms-api/api/system/auth/captcha        # 后端
 ```
 
 ### 方式 A：临时 Quick Tunnel（最快，推荐临时用）
 
 ```bash
 # 后台启动隧道
-nohup cloudflared tunnel --url http://localhost:3000 > /tmp/cloudflared.log 2>&1 &
+nohup cloudflared tunnel --url http://localhost:3001 > /tmp/cloudflared.log 2>&1 &
 
 # 查看分配的公网域名
 grep -oE "https://[a-z0-9-]+\.trycloudflare\.com" /tmp/cloudflared.log | head -1
@@ -115,7 +115,7 @@ https://stocks-crest-lasting-episode.trycloudflare.com
 ### 方式 B：前台运行（调试用，可看实时日志）
 
 ```bash
-cloudflared tunnel --url http://localhost:3000
+cloudflared tunnel --url http://localhost:3001
 ```
 
 `Ctrl+C` 即停止隧道。
@@ -169,7 +169,7 @@ kill <PID>
 ```bash
 # 1. 查看 cloudflared 是否在跑
 ps aux | grep cloudflared | grep -v grep
-# 期望看到: cloudflared tunnel --url http://localhost:3000
+# 期望看到: cloudflared tunnel --url http://localhost:3001
 
 # 2. 查看隧道实时日志（连接失败、URL 变更都在这）
 tail -f /tmp/cloudflared.log
@@ -182,11 +182,11 @@ curl http://127.0.0.1:20241/metrics | grep -E "tunnel|cloudflared"
 #    修复: vite.config.ts 设 allowedHosts: true，重启 npm run dev
 
 # 5. 公网返回 502 / 530 → 隧道断了或前端没起
-#    检查: curl http://localhost:3000/ 是否 200
+#    检查: curl http://localhost:3001/ 是否 200
 #    检查: ps aux | grep cloudflared 是否还在
 
 # 6. 前端能打开但接口 404 → Vite 代理没生效
-#    检查: curl http://localhost:3000/wms-api/api/system/auth/captcha 是否 200
+#    检查: curl http://localhost:3001/wms-api/api/system/auth/captcha 是否 200
 #    若 404，确认 vite.config.ts 的 proxy 配置存在
 ```
 
@@ -242,7 +242,7 @@ credentials-file: /Users/<你的用户名>/.cloudflared/<UUID>.json
 
 ingress:
   - hostname: wms.yourdomain.com
-    service: http://localhost:3000
+    service: http://localhost:3001
   - service: http_status:404
 ```
 
@@ -271,7 +271,7 @@ sudo cloudflared service install
 
 | 场景 | 用哪个 |
 |------|--------|
-| 同 WiFi / 同办公室内联调 | 局域网访问（`http://172.20.10.6:3000`），无需 cloudflared |
+| 同 WiFi / 同办公室内联调 | 局域网访问（`http://172.20.10.6:3001`），无需 cloudflared |
 | 跨网络 / 远程演示 / 手机热点 | Cloudflare Tunnel |
 | 长期对外提供服务 | 命名隧道 + 自有域名（见第八节） |
 
@@ -292,8 +292,8 @@ set -e
 command -v cloudflared >/dev/null 2>&1 || { echo "请先 brew install cloudflared"; exit 1; }
 
 # 检查前端是否在跑
-if ! curl -s -o /dev/null http://localhost:3000/; then
-  echo "前端 3000 未启动，先执行 ./scripts/start-lan.sh"
+if ! curl -s -o /dev/null http://localhost:3001/; then
+  echo "前端 3001 未启动，先执行 ./scripts/start-lan.sh"
   exit 1
 fi
 
@@ -301,7 +301,7 @@ fi
 pkill -f "cloudflared tunnel" 2>/dev/null && sleep 1 || true
 
 # 启动隧道
-nohup cloudflared tunnel --url http://localhost:3000 > /tmp/cloudflared.log 2>&1 &
+nohup cloudflared tunnel --url http://localhost:3001 > /tmp/cloudflared.log 2>&1 &
 echo "cloudflared PID: $!"
 echo "等待公网地址分配..."
 
@@ -337,7 +337,7 @@ chmod +x scripts/start-tunnel.sh
 
 ```bash
 # 启动临时隧道
-nohup cloudflared tunnel --url http://localhost:3000 > /tmp/cloudflared.log 2>&1 &
+nohup cloudflared tunnel --url http://localhost:3001 > /tmp/cloudflared.log 2>&1 &
 
 # 查公网地址
 grep -oE "https://[a-z0-9-]+\.trycloudflare\.com" /tmp/cloudflared.log | head -1
