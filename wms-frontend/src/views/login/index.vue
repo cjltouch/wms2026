@@ -38,7 +38,7 @@
         </el-form-item>
       </el-form>
       <div class="login-tips">
-        <span>默认账号: admin / 123456</span>
+        <span>账号密码切勿透露他人</span>
       </div>
     </div>
   </div>
