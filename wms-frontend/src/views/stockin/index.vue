@@ -519,6 +519,7 @@ function onSkuSelect(row: any) {
     row.innerCode = sku.innerCode
     row.skuName = sku.skuName
     row.specText = sku.specText
+    row.unitId = sku.unitId
     row.unitName = sku.unitName
     row.costPrice = sku.defaultCost || 0
   }
@@ -541,6 +542,8 @@ async function onSourceBlur() {
           skuId: d.skuId,
           skuCode: d.skuCode,
           skuName: d.skuName,
+          unitId: d.unitId,
+          unitName: d.unitName,
           expectedQty: d.quantity || d.expectedQty || 0,
           actualQty: 0,
           diffQty: 0,

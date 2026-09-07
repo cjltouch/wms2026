@@ -345,6 +345,7 @@ public class WmsGoodsSpuServiceImpl extends ServiceImpl<WmsGoodsSpuMapper, WmsGo
                 WmsGoodsSpu spu = spuMap.get(sku.getSpuId());
                 if (spu != null) {
                     sku.setSkuName(spu.getSpuName());
+                    sku.setUnitId(spu.getUnitId());
                     sku.setUnitName(unitMap.get(spu.getUnitId()));
                 }
                 sku.setAvailableQty(BigDecimal.ZERO);

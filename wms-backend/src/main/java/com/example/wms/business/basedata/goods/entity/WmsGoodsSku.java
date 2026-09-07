@@ -101,6 +101,11 @@ public class WmsGoodsSku implements Serializable {
 
     private String skuName;
 
+    /** 计量单位ID（单位定义在SPU上，查询时回填，非本表列） */
+    @TableField(exist = false)
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long unitId;
+
     @TableField(exist = false)
     private String unitName;
 }

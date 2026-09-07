@@ -149,6 +149,7 @@
           <el-table-column prop="skuCode" label="编码" width="120" />
           <el-table-column label="内部编码" prop="innerCode" width="110" />
           <el-table-column label="商品名称" min-width="150" prop="skuName" show-overflow-tooltip />
+          <el-table-column label="单位" prop="unitName" width="60" />
           <el-table-column label="数量" width="100">
             <template #default="{ row }">
               <el-input-number v-model="row.quantity" :min="0" :precision="0" size="small" controls-position="right" style="width: 100%" @change="calcSubtotal(row)" />
@@ -467,13 +468,15 @@ async function searchSku(query: string) {
   }
 }
 
-// 选中商品后自动回填编码、名称、默认成本价和销售价
+// 选中商品后自动回填编码、名称、单位、默认成本价和销售价
 function onSkuSelect(row: any) {
   const sku = skuOptions.value.find(s => s.skuId === row.skuId)
   if (sku) {
     row.skuCode = sku.skuCode
     row.innerCode = sku.innerCode
     row.skuName = sku.skuName
+    row.unitId = sku.unitId
+    row.unitName = sku.unitName
     row.costPrice = sku.defaultCost || 0
     row.salePrice = sku.defaultPrice || 0
   }
