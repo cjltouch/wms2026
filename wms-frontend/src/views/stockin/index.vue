@@ -45,7 +45,7 @@
           <el-tag :type="typeTag(row.type)">{{ typeText(row.type) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="sourceBillNo" label="源单号" min-width="140" show-overflow-tooltip />
+<!--      <el-table-column prop="sourceBillNo" label="源单号" min-width="140" show-overflow-tooltip />-->
       <el-table-column prop="warehouseName" label="入库仓库" min-width="130" show-overflow-tooltip />
       <el-table-column prop="totalQty" label="总数量" width="100" align="right" />
       <el-table-column label="总金额" width="130" align="right">
@@ -242,6 +242,7 @@
           <el-table-column prop="skuCode" label="编码" width="110" />
           <el-table-column label="内部编码" prop="innerCode" width="110" />
           <el-table-column prop="skuName" label="名称" min-width="130" show-overflow-tooltip />
+          <el-table-column label="单位" prop="unitName" width="60" />
           <el-table-column prop="expectedQty" label="预期数量" width="100" align="right" />
           <el-table-column prop="actualQty" label="实际数量" width="100" align="right" />
           <el-table-column prop="diffQty" label="差异" width="90" align="right" />

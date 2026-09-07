@@ -2,8 +2,11 @@
   <div class="page-container">
     <!-- 搜索表单 -->
     <el-form :inline="true" :model="queryParams" class="search-form">
-      <el-form-item label="关键字">
-        <el-input v-model="queryParams.keyword" placeholder="供应商名称/编码" clearable @keyup.enter="handleQuery" />
+      <el-form-item label="供应商名称">
+        <el-input v-model="queryParams.supplierName" placeholder="请输入供应商名称" clearable @keyup.enter="handleQuery" />
+      </el-form-item>
+      <el-form-item label="供应商编码">
+        <el-input v-model="queryParams.supplierCode" placeholder="请输入供应商编码" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" :icon="Search" @click="handleQuery">查询</el-button>
@@ -225,7 +228,8 @@ function handleQuery() {
 }
 
 function handleReset() {
-  queryParams.keyword = ''
+  queryParams.supplierName = ''
+  queryParams.supplierCode = ''
   queryParams.pageNum = 1
   loadData()
 }

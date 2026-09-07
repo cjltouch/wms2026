@@ -5,6 +5,9 @@
       <el-form-item label="品牌名称">
         <el-input v-model="queryParams.brandName" placeholder="请输入品牌名称" clearable @keyup.enter="handleQuery" />
       </el-form-item>
+      <el-form-item label="品牌编码">
+        <el-input v-model="queryParams.brandCode" placeholder="请输入品牌编码" clearable @keyup.enter="handleQuery" />
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" :icon="Search" @click="handleQuery">查询</el-button>
         <el-button :icon="Refresh" @click="handleReset">重置</el-button>

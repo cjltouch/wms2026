@@ -228,11 +228,6 @@
                 </el-select>
               </template>
             </el-table-column>
-            <el-table-column label="条形码" width="140">
-              <template #default="{ row }">
-                <el-input v-model="row.barcode" size="small" placeholder="条形码" />
-              </template>
-            </el-table-column>
             <el-table-column label="规格" min-width="140">
               <template #default="{ row }">
                 <el-input v-model="row.specText" size="small" placeholder="如 500ml/瓶" />
@@ -241,6 +236,21 @@
             <el-table-column label="颜色" width="100">
               <template #default="{ row }">
                 <el-input v-model="row.color" size="small" placeholder="颜色" />
+              </template>
+            </el-table-column>
+            <el-table-column label="成本价" width="110">
+              <template #default="{ row }">
+                <el-input-number v-model="row.defaultCost" size="small" :min="0" :precision="2" :controls="false" style="width: 100%" />
+              </template>
+            </el-table-column>
+            <el-table-column label="销售价" width="110">
+              <template #default="{ row }">
+                <el-input-number v-model="row.defaultSale" size="small" :min="0" :precision="2" :controls="false" style="width: 100%" />
+              </template>
+            </el-table-column>
+            <el-table-column label="条形码" width="140">
+              <template #default="{ row }">
+                <el-input v-model="row.barcode" size="small" placeholder="条形码" />
               </template>
             </el-table-column>
             <el-table-column label="重量(g)" width="100">
@@ -271,16 +281,6 @@
             <el-table-column label="保质天数" width="100">
               <template #default="{ row }">
                 <el-input-number v-model="row.shelfLifeDays" size="small" :min="0" :controls="false" style="width: 100%" />
-              </template>
-            </el-table-column>
-            <el-table-column label="成本价" width="110">
-              <template #default="{ row }">
-                <el-input-number v-model="row.defaultCost" size="small" :min="0" :precision="2" :controls="false" style="width: 100%" />
-              </template>
-            </el-table-column>
-            <el-table-column label="销售价" width="110">
-              <template #default="{ row }">
-                <el-input-number v-model="row.defaultSale" size="small" :min="0" :precision="2" :controls="false" style="width: 100%" />
               </template>
             </el-table-column>
             <el-table-column label="操作" width="80" align="center" fixed="right">

@@ -150,9 +150,14 @@
           <el-table-column label="内部编码" prop="innerCode" width="110" />
           <el-table-column label="商品名称" min-width="150" prop="skuName" show-overflow-tooltip />
           <el-table-column label="单位" prop="unitName" width="60" />
-          <el-table-column label="数量" width="100">
+          <el-table-column label="应出数量" width="100">
             <template #default="{ row }">
-              <el-input-number v-model="row.quantity" :min="0" :precision="0" size="small" controls-position="right" style="width: 100%" @change="calcSubtotal(row)" />
+              <el-input-number v-model="row.expectedQty" :min="0" :precision="0" size="small" controls-position="right" style="width: 100%" @change="calcSubtotal(row)" />
+            </template>
+          </el-table-column>
+          <el-table-column label="实出数量" width="100">
+            <template #default="{ row }">
+              <el-input-number v-model="row.actualQty" :min="0" :precision="0" size="small" controls-position="right" style="width: 100%" @change="calcSubtotal(row)" />
             </template>
           </el-table-column>
           <el-table-column label="成本价" width="120">
@@ -165,8 +170,8 @@
               <el-input-number v-model="row.salePrice" :min="0" :precision="2" size="small" controls-position="right" style="width: 100%" @change="calcSubtotal(row)" />
             </template>
           </el-table-column>
-          <el-table-column label="小计" width="110" align="right">
-            <template #default="{ row }">¥{{ toFixed2(row.subtotal) }}</template>
+          <el-table-column label="销售小计" width="110" align="right">
+            <template #default="{ row }">¥{{ toFixed2(row.subtotalSale) }}</template>
           </el-table-column>
           <el-table-column label="操作" width="80" align="center">
             <template #default="{ $index }">
@@ -193,7 +198,8 @@
           <el-tag :type="statusTagType(detail.status)">{{ statusMap[detail.status] || '-' }}</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="总数量">{{ detail.totalQty }}</el-descriptions-item>
-        <el-descriptions-item label="总金额">¥{{ toFixed2(detail.totalSale) }}</el-descriptions-item>
+        <el-descriptions-item label="成本总额">¥{{ toFixed2(detail.totalCost) }}</el-descriptions-item>
+<!--        <el-descriptions-item label="销售总额">¥{{ toFixed2(detail.totalSale) }}</el-descriptions-item>-->
         <el-descriptions-item label="创建时间">{{ detail.createTime }}</el-descriptions-item>
         <el-descriptions-item label="备注" :span="3">{{ detail.remark || '-' }}</el-descriptions-item>
       </el-descriptions>
@@ -204,16 +210,19 @@
         <el-table-column prop="skuCode" label="商品编码" min-width="120" show-overflow-tooltip />
         <el-table-column label="内部编码" prop="innerCode" width="110" />
         <el-table-column prop="skuName" label="商品名称" min-width="150" show-overflow-tooltip />
-        <el-table-column label="数量" width="90" align="right">
-          <template #default="{ row }">{{ row.actualQty ?? row.expectedQty }}</template>
-        </el-table-column>
+        <el-table-column label="单位" prop="unitName" width="60" />
+        <el-table-column label="应出数量" width="90" align="right" prop="expectedQty" />
+        <el-table-column label="实出数量" width="90" align="right" prop="actualQty" />
         <el-table-column label="成本价" width="110" align="right">
           <template #default="{ row }">¥{{ toFixed2(row.costPrice) }}</template>
         </el-table-column>
         <el-table-column label="销售价" width="110" align="right">
           <template #default="{ row }">¥{{ toFixed2(row.salePrice) }}</template>
         </el-table-column>
-        <el-table-column label="小计" width="110" align="right">
+        <el-table-column label="成本小计" width="110" align="right">
+          <template #default="{ row }">¥{{ toFixed2(row.subtotalCost) }}</template>
+        </el-table-column>
+        <el-table-column label="销售小计" width="110" align="right">
           <template #default="{ row }">¥{{ toFixed2(row.subtotalSale) }}</template>
         </el-table-column>
       </el-table>
@@ -435,11 +444,9 @@ async function handleEdit(row: any) {
     const data = res.data || {}
     const order = data.order || data // 兼容旧接口直接返回 order 的情况
     Object.assign(form, order)
-    // 后端明细返回 expectedQty/actualQty，编辑弹窗数量列绑定 quantity，需映射
-    form.items = (data.items || order.items || []).map((d: any) => ({
-      ...d,
-      quantity: d.quantity ?? (d.actualQty ?? d.expectedQty ?? 0),
-    }))
+    // 后端明细字段 expectedQty/actualQty/subtotalSale/subtotalCost 与前端一致，直接使用
+    form.items = (data.items || order.items || []).map((d: any) => ({ ...d }))
+    form.items.forEach((it: any) => calcSubtotal(it))
     form.stockOutId = order.stockOutId
     // 把已有明细的商品塞入 skuOptions，使 el-select 能回显商品名称
     skuOptions.value = form.items.map((d: any) => ({ skuId: d.skuId, skuCode: d.skuCode, skuName: d.skuName }))
@@ -450,7 +457,7 @@ async function handleEdit(row: any) {
 }
 
 function addDetailRow() {
-  form.items.push({ skuId: undefined, skuCode: '', skuName: '', quantity: 0, costPrice: 0, salePrice: 0, subtotal: 0 })
+  form.items.push({ skuId: undefined, skuCode: '', skuName: '', expectedQty: 0, actualQty: 0, costPrice: 0, salePrice: 0, subtotalSale: 0, subtotalCost: 0 })
 }
 
 const skuOptions = ref<any[]>([])
@@ -479,6 +486,7 @@ function onSkuSelect(row: any) {
     row.unitName = sku.unitName
     row.costPrice = sku.defaultCost || 0
     row.salePrice = sku.defaultPrice || 0
+    calcSubtotal(row)
   }
 }
 
@@ -486,8 +494,11 @@ function removeDetailRow(idx: number) {
   form.items.splice(idx, 1)
 }
 
+// 出库数量以实际为准，未填实际时取预期；小计 = 数量 × 单价
 function calcSubtotal(row: any) {
-  row.subtotal = Number(row.quantity || 0) * Number(row.salePrice || 0)
+  const qty = Number(row.actualQty || row.expectedQty || 0)
+  row.subtotalSale = qty * Number(row.salePrice || 0)
+  row.subtotalCost = qty * Number(row.costPrice || 0)
 }
 
 async function handleSave() {
@@ -500,12 +511,15 @@ async function handleSave() {
     }
     submitting.value = true
     try {
-      const items = form.items.map((it: any) => ({ ...it, subtotal: Number(it.quantity) * Number(it.salePrice) }))
+      const items = form.items.map((it: any) => {
+        const qty = Number(it.actualQty || it.expectedQty || 0)
+        return { ...it, subtotalSale: qty * Number(it.salePrice || 0), subtotalCost: qty * Number(it.costPrice || 0) }
+      })
       const payload = {
         ...form,
         warehouseName: warehouseList.value.find((w: any) => w.warehouseId == form.warehouseId)?.warehouseName || '',
-        totalQty: items.reduce((s: number, it: any) => s + Number(it.quantity || 0), 0),
-        totalAmount: items.reduce((s: number, it: any) => s + Number(it.subtotal || 0), 0),
+        totalQty: items.reduce((s: number, it: any) => s + Number(it.actualQty || it.expectedQty || 0), 0),
+        totalAmount: items.reduce((s: number, it: any) => s + Number(it.subtotalSale || 0), 0),
         items,
       }
       if (isEdit.value) {
