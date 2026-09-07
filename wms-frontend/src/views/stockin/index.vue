@@ -161,6 +161,7 @@
           <el-table-column prop="skuCode" label="编码" width="110" />
           <el-table-column label="内部编码" prop="innerCode" width="110" />
           <el-table-column prop="skuName" label="名称" min-width="130" show-overflow-tooltip />
+          <el-table-column label="单位" prop="unitName" width="60" />
           <el-table-column label="预期数量" width="110">
             <template #default="{ row }">
               <el-input-number v-model="row.expectedQty" :min="0" :precision="2" size="small" style="width: 100%" @change="calcRow(row)" />
