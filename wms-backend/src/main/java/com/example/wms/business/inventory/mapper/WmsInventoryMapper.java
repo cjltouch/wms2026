@@ -56,7 +56,8 @@ public interface WmsInventoryMapper extends BaseMapper<WmsInventory> {
 
     /** 出库确认（锁定转出库）：quantity 与 locked_qty 同减，available_qty 锁定时已扣不再变动 */
     @Update("UPDATE wms_inventory SET quantity = quantity - #{qty}, locked_qty = locked_qty - #{qty}, " +
-            "last_out_time = #{now}, version = version + 1 " +
+            "last_out_time = #{now}, version = version + 1 ," +
+            "total_amount = cost_price * quantity " +
             "WHERE warehouse_id = #{whId} AND sku_id = #{skuId} " +
             "AND (location_id = #{locId} OR (location_id IS NULL AND #{locId} IS NULL)) " +
             "AND (batch_no = #{batchNo} OR (COALESCE(batch_no,'') = '' AND COALESCE(#{batchNo},'') = '')) " +

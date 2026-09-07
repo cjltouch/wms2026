@@ -604,12 +604,14 @@ public class WmsStockOutServiceImpl extends ServiceImpl<WmsStockOutMapper, WmsSt
         logRow.setQtyChange(-qty);
         logRow.setUnitPrice(item.getCostPrice());
         logRow.setAmountChange((item.getCostPrice() != null ? item.getCostPrice() : BigDecimal.ZERO)
-                .multiply(BigDecimal.valueOf(qty)));
+                .multiply(BigDecimal.valueOf(beforeQty - qty)));
         logRow.setOperateBy(AuthContextHolder.getUserId());
         logRow.setOperateTime(now);
         logRow.setBeforeQty(beforeQty);
         logRow.setAfterQty(beforeQty - qty);
         logRow.setRemark(remark);
+        logRow.setInnerCode(item.getInnerCode());
+        logRow.setOperateName(AuthContextHolder.getNickName());
         inventoryLogMapper.insert(logRow);
     }
 
