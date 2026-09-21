@@ -13,7 +13,7 @@
 
     <!-- 操作 -->
     <div class="table-operations">
-      <el-button type="primary" :icon="Plus" @click="handleAdd">新增仓库</el-button>
+      <el-button v-perm="'wms:warehouse:add'" type="primary" :icon="Plus" @click="handleAdd">新增仓库</el-button>
     </div>
 
     <!-- 表格 -->
@@ -41,8 +41,8 @@
       </el-table-column>
       <el-table-column label="操作" width="160" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" :icon="Edit" @click="handleEdit(row)">编辑</el-button>
-          <el-button link type="danger" :icon="Delete" @click="handleDelete(row)">删除</el-button>
+          <el-button v-perm="'wms:warehouse:edit'" link type="primary" :icon="Edit" @click="handleEdit(row)">编辑</el-button>
+          <el-button v-perm="'wms:warehouse:remove'" link type="danger" :icon="Delete" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

@@ -92,6 +92,7 @@ public class WmsSupplierController {
         return R.ok();
     }
 
+    @PreAuthorize(hasAuthority = "wms:supplier:export")
     @Operation(summary = "导出供应商")
     @GetMapping("/export")
     public R<Void> export() {

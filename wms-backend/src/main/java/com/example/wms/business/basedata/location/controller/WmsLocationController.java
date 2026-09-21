@@ -102,12 +102,14 @@ public class WmsLocationController {
         return R.ok(wmsLocationService.batchGenerate(req));
     }
 
+    @PreAuthorize(hasAuthority = "wms:location:add")
     @Operation(summary = "导入库位")
     @PostMapping("/import")
     public R<Void> importData() {
         return R.ok();
     }
 
+    @PreAuthorize(hasAuthority = "wms:location:export")
     @Operation(summary = "导出库位")
     @GetMapping("/export")
     public R<Void> export() {

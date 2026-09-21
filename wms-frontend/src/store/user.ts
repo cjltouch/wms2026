@@ -35,7 +35,8 @@ export const useUserStore = defineStore('user', () => {
     // 后端 avatar 可能为 null 或空字符串 → 前端给一个随机默认头像（但不回写后端，保持后端数据干净）
     avatarRaw.value = (data.avatar || data.user?.avatar || '') as string
     roles.value = data.roles || []
-    permissions.value = data.permissions || []
+    // 后端字段名是 perms（Set<String>），前端用 permissions 命名
+    permissions.value = data.perms || data.permissions || []
     routers.value = data.routers || []
     return data
   }

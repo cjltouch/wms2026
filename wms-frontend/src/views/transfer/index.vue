@@ -30,7 +30,7 @@
 
     <!-- 操作按钮 -->
     <div class="action-bar">
-      <el-button type="primary" :icon="Plus" @click="handleAdd">新增调拨单</el-button>
+      <el-button v-perm="'wms:transfer:add'" type="primary" :icon="Plus" @click="handleAdd">新增调拨单</el-button>
       <el-button :icon="RefreshRight" @click="loadData">刷新</el-button>
     </div>
 
@@ -57,13 +57,13 @@
         <el-table-column prop="expectDate" label="期望到货日期" width="120" />
         <el-table-column label="操作" width="340" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleDetail(row)">详情</el-button>
-            <el-button v-if="row.status === 0" link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-if="row.status === 0" link type="primary" size="small" @click="handleSubmit(row)">提交</el-button>
-            <el-button v-if="row.status === 1" link type="warning" size="small" @click="handleAudit(row)">审核</el-button>
-            <el-button v-if="row.status === 2" link type="success" size="small" @click="handleConfirmOut(row)">确认出库</el-button>
-            <el-button v-if="row.status === 3" link type="success" size="small" @click="handleConfirmIn(row)">确认入库</el-button>
-            <el-button v-if="[0, 1, 2].includes(row.status)" link type="danger" size="small" @click="handleVoid(row)">作废</el-button>
+            <el-button v-perm="'wms:transfer:list'" link type="primary" size="small" @click="handleDetail(row)">详情</el-button>
+            <el-button v-if="row.status === 0" v-perm="'wms:transfer:edit'" link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-if="row.status === 0" v-perm="'wms:transfer:submit'" link type="primary" size="small" @click="handleSubmit(row)">提交</el-button>
+            <el-button v-if="row.status === 1" v-perm="'wms:transfer:audit'" link type="warning" size="small" @click="handleAudit(row)">审核</el-button>
+            <el-button v-if="row.status === 2" v-perm="'wms:transfer:out'" link type="success" size="small" @click="handleConfirmOut(row)">确认出库</el-button>
+            <el-button v-if="row.status === 3" v-perm="'wms:transfer:in'" link type="success" size="small" @click="handleConfirmIn(row)">确认入库</el-button>
+            <el-button v-if="[0, 1, 2].includes(row.status)" v-perm="'wms:transfer:void'" link type="danger" size="small" @click="handleVoid(row)">作废</el-button>
           </template>
         </el-table-column>
       </el-table>

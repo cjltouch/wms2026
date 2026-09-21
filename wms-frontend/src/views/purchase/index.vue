@@ -28,7 +28,7 @@
 
     <!-- 操作 -->
     <div class="table-operations">
-      <el-button type="primary" :icon="Plus" @click="handleAdd">新增采购单</el-button>
+      <el-button v-perm="'wms:purchase:add'" type="primary" :icon="Plus" @click="handleAdd">新增采购单</el-button>
     </div>
 
     <!-- 表格 -->
@@ -53,13 +53,13 @@
       <el-table-column prop="createTime" label="创建时间" width="160" align="center" />
       <el-table-column label="操作" width="280" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" :icon="View" @click="handleDetail(row)">详情</el-button>
+          <el-button v-perm="'wms:purchase:list'" link type="primary" :icon="View" @click="handleDetail(row)">详情</el-button>
           <el-button link type="primary" :icon="Printer" @click="handlePrint(row)">打印</el-button>
-          <el-button v-if="row.status === 0" link type="primary" :icon="Edit" @click="handleEdit(row)">编辑</el-button>
-          <el-button v-if="row.status === 0" link type="success" @click="handleRowSubmit(row)">提交</el-button>
-          <el-button v-if="row.status === 1" link type="warning" :icon="Check" @click="handleAudit(row)">审核</el-button>
-          <el-button v-if="row.status === 2" link type="info" @click="handleUnaudit(row)">反审核</el-button>
-          <el-button v-if="[0, 1, 2].includes(row.status)" link type="danger" @click="handleVoid(row)">作废</el-button>
+          <el-button v-if="row.status === 0" v-perm="'wms:purchase:edit'" link type="primary" :icon="Edit" @click="handleEdit(row)">编辑</el-button>
+          <el-button v-if="row.status === 0" v-perm="'wms:purchase:submit'" link type="success" @click="handleRowSubmit(row)">提交</el-button>
+          <el-button v-if="row.status === 1" v-perm="'wms:purchase:audit'" link type="warning" :icon="Check" @click="handleAudit(row)">审核</el-button>
+          <el-button v-if="row.status === 2" v-perm="'wms:purchase:unaudit'" link type="info" @click="handleUnaudit(row)">反审核</el-button>
+          <el-button v-if="[0, 1, 2].includes(row.status)" v-perm="'wms:purchase:void'" link type="danger" @click="handleVoid(row)">作废</el-button>
         </template>
       </el-table-column>
     </el-table>

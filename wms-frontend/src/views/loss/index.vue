@@ -30,7 +30,7 @@
 
     <!-- 操作按钮 -->
     <div class="action-bar">
-      <el-button type="primary" :icon="Plus" @click="handleAdd">新增报损单</el-button>
+      <el-button v-perm="'wms:loss:add'" type="primary" :icon="Plus" @click="handleAdd">新增报损单</el-button>
       <el-button :icon="RefreshRight" @click="loadData">刷新</el-button>
     </div>
 
@@ -56,12 +56,12 @@
         </el-table-column>
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleDetail(row)">详情</el-button>
-            <el-button v-if="row.status === 0" link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-if="row.status === 0" link type="primary" size="small" @click="handleSubmit(row)">提交</el-button>
-            <el-button v-if="row.status === 1" link type="warning" size="small" @click="handleAudit(row)">审核</el-button>
-            <el-button v-if="row.status === 2" link type="success" size="small" @click="handleProcess(row)">处理</el-button>
-            <el-button v-if="[0, 1, 2].includes(row.status)" link type="danger" size="small" @click="handleVoid(row)">作废</el-button>
+            <el-button v-perm="'wms:loss:list'" link type="primary" size="small" @click="handleDetail(row)">详情</el-button>
+            <el-button v-if="row.status === 0" v-perm="'wms:loss:edit'" link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-if="row.status === 0" v-perm="'wms:loss:submit'" link type="primary" size="small" @click="handleSubmit(row)">提交</el-button>
+            <el-button v-if="row.status === 1" v-perm="'wms:loss:audit'" link type="warning" size="small" @click="handleAudit(row)">审核</el-button>
+            <el-button v-if="row.status === 2" v-perm="'wms:loss:handle'" link type="success" size="small" @click="handleProcess(row)">处理</el-button>
+            <el-button v-if="[0, 1, 2].includes(row.status)" v-perm="'wms:loss:void'" link type="danger" size="small" @click="handleVoid(row)">作废</el-button>
           </template>
         </el-table-column>
       </el-table>

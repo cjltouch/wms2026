@@ -87,6 +87,7 @@ public class InventoryController {
         inventoryService.exportInventory(req, response);
     }
 
+    @PreAuthorize(hasAuthority = "wms:inventory:log")
     @OperationLog(module = "库存管理", type = "EXPORT", businessType = 5)
     @Operation(summary = "导出库存日志")
     @GetMapping("/log/export")

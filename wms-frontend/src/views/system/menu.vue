@@ -13,7 +13,7 @@
 
     <!-- 操作按钮 -->
     <div class="action-bar">
-      <el-button type="primary" :icon="Plus" @click="handleAddRoot">新增顶级菜单</el-button>
+      <el-button v-perm="'system:menu:add'" type="primary" :icon="Plus" @click="handleAddRoot">新增顶级菜单</el-button>
     </div>
 
     <!-- 树形表格 -->
@@ -43,9 +43,9 @@
       </el-table-column>
       <el-table-column label="操作" width="200" align="center" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" :icon="Plus" @click="handleAddChild(row)">新增</el-button>
-          <el-button link type="primary" :icon="Edit" @click="handleEdit(row)">编辑</el-button>
-          <el-button link type="danger" :icon="Delete" @click="handleDelete(row)">删除</el-button>
+          <el-button v-perm="'system:menu:add'" link type="primary" :icon="Plus" @click="handleAddChild(row)">新增</el-button>
+          <el-button v-perm="'system:menu:edit'" link type="primary" :icon="Edit" @click="handleEdit(row)">编辑</el-button>
+          <el-button v-perm="'system:menu:remove'" link type="danger" :icon="Delete" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

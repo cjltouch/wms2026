@@ -21,7 +21,7 @@
 
     <!-- 操作 -->
     <div class="table-operations">
-      <el-button :icon="Download" :loading="exporting" @click="handleExport">导出</el-button>
+      <el-button v-perm="'wms:inventory:list'" :icon="Download" :loading="exporting" @click="handleExport">导出</el-button>
     </div>
 
     <!-- 表格 -->

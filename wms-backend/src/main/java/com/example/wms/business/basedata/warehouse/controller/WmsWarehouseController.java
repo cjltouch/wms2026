@@ -92,6 +92,7 @@ public class WmsWarehouseController {
         return R.ok();
     }
 
+    @PreAuthorize(hasAuthority = "wms:warehouse:export")
     @Operation(summary = "导出仓库")
     @GetMapping("/export")
     public R<Void> export() {

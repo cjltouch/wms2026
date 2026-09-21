@@ -92,6 +92,7 @@ public class WmsBrandController {
         return R.ok();
     }
 
+    @PreAuthorize(hasAuthority = "wms:brand:export")
     @Operation(summary = "导出品牌")
     @GetMapping("/export")
     public R<Void> export() {

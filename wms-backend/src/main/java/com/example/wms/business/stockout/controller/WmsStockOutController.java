@@ -149,6 +149,7 @@ public class WmsStockOutController {
         return R.ok();
     }
 
+    @PreAuthorize(hasAuthority = "wms:stock-out:export")
     @Operation(summary = "导出出库明细（只导出已审核）")
     @GetMapping("/export")
     public void export(StockOutPageReq req, jakarta.servlet.http.HttpServletResponse response) {

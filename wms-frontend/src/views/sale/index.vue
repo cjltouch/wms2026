@@ -31,7 +31,7 @@
 
     <!-- 操作按钮 -->
     <div class="action-bar">
-      <el-button type="primary" :icon="Plus" @click="handleAdd">新增销售单</el-button>
+      <el-button v-perm="'wms:sale:add'" type="primary" :icon="Plus" @click="handleAdd">新增销售单</el-button>
       <el-button :icon="RefreshRight" @click="loadData">刷新</el-button>
     </div>
 
@@ -66,14 +66,14 @@
         <el-table-column prop="saleDate" label="销售日期" width="110" />
         <el-table-column label="操作" width="360" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleDetail(row)">详情</el-button>
-            <el-button v-if="row.status === 0" link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-if="row.status === 0" link type="primary" size="small" @click="handleSubmit(row)">提交</el-button>
-            <el-button v-if="row.status === 1" link type="warning" size="small" @click="handleAudit(row)">审核</el-button>
-            <el-button v-if="row.status === 2" link type="success" size="small" @click="handleConfirmOut(row)">确认出库</el-button>
-            <el-button v-if="row.status === 3" link type="primary" size="small" @click="handleConfirmPay(row)">确认收款</el-button>
-            <el-button v-if="row.status === 3" link type="success" size="small" @click="handleComplete(row)">完成订单</el-button>
-            <el-button v-if="[0, 1, 2].includes(row.status)" link type="danger" size="small" @click="handleVoid(row)">作废</el-button>
+            <el-button v-perm="'wms:sale:list'" link type="primary" size="small" @click="handleDetail(row)">详情</el-button>
+            <el-button v-if="row.status === 0" v-perm="'wms:sale:edit'" link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-if="row.status === 0" v-perm="'wms:sale:submit'" link type="primary" size="small" @click="handleSubmit(row)">提交</el-button>
+            <el-button v-if="row.status === 1" v-perm="'wms:sale:audit'" link type="warning" size="small" @click="handleAudit(row)">审核</el-button>
+            <el-button v-if="row.status === 2" v-perm="'wms:sale:out'" link type="success" size="small" @click="handleConfirmOut(row)">确认出库</el-button>
+            <el-button v-if="row.status === 3" v-perm="'wms:sale:pay'" link type="primary" size="small" @click="handleConfirmPay(row)">确认收款</el-button>
+            <el-button v-if="row.status === 3" v-perm="'wms:sale:complete'" link type="success" size="small" @click="handleComplete(row)">完成订单</el-button>
+            <el-button v-if="[0, 1, 2].includes(row.status)" v-perm="'wms:sale:void'" link type="danger" size="small" @click="handleVoid(row)">作废</el-button>
           </template>
         </el-table-column>
       </el-table>

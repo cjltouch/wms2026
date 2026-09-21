@@ -6,7 +6,7 @@
         <el-input v-model="filterText" placeholder="请输入分类名称过滤" clearable />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" :icon="Plus" @click="handleAddRoot">新增顶级分类</el-button>
+        <el-button v-perm="'wms:category:add'" type="primary" :icon="Plus" @click="handleAddRoot">新增顶级分类</el-button>
         <el-button :icon="Refresh" @click="loadTree">刷新</el-button>
       </el-form-item>
     </el-form>
@@ -37,9 +37,9 @@
               <span class="node-order">排序: {{ data.orderNum ?? 0 }}</span>
             </div>
             <div class="node-actions">
-              <el-button link type="primary" :icon="Plus" @click.stop="handleAddChild(data)">子分类</el-button>
-              <el-button link type="primary" :icon="Edit" @click.stop="handleEdit(data)">编辑</el-button>
-              <el-button link type="danger" :icon="Delete" @click.stop="handleDelete(data)">删除</el-button>
+              <el-button v-perm="'wms:category:add'" link type="primary" :icon="Plus" @click.stop="handleAddChild(data)">子分类</el-button>
+              <el-button v-perm="'wms:category:edit'" link type="primary" :icon="Edit" @click.stop="handleEdit(data)">编辑</el-button>
+              <el-button v-perm="'wms:category:remove'" link type="danger" :icon="Delete" @click.stop="handleDelete(data)">删除</el-button>
             </div>
           </div>
         </template>

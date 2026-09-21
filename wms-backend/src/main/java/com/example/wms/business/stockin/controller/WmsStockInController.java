@@ -143,6 +143,7 @@ public class WmsStockInController {
         return R.ok();
     }
 
+    @PreAuthorize(hasAuthority = "wms:stock-in:export")
     @Operation(summary = "导出入库明细（只导出已上架）")
     @GetMapping("/export")
     public void export(StockInPageReq req, HttpServletResponse response) {

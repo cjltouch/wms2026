@@ -105,6 +105,7 @@ public class WmsGoodsController {
         return R.ok();
     }
 
+    @PreAuthorize(hasAuthority = "wms:goods:export")
     @Operation(summary = "导出SPU")
     @GetMapping("/spu/export")
     public void exportSpu(GoodsSpuPageReq req, jakarta.servlet.http.HttpServletResponse response) {

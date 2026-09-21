@@ -141,6 +141,7 @@ public class WmsSaleOrderController {
         return R.ok();
     }
 
+    @PreAuthorize(hasAuthority = "wms:sale:export")
     @Operation(summary = "导出销售单")
     @GetMapping("/export")
     public void export(SalePageReq req, HttpServletResponse response) throws IOException {
@@ -151,6 +152,7 @@ public class WmsSaleOrderController {
         response.getOutputStream().write(data);
     }
 
+    @PreAuthorize(hasAuthority = "wms:sale:list")
     @Operation(summary = "利润分析")
     @GetMapping("/profit-analysis")
     public R<?> profitAnalysis(@RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startDate,

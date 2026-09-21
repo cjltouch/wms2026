@@ -36,8 +36,8 @@
 
     <!-- 操作按钮 -->
     <div class="action-bar">
-      <el-button type="primary" :icon="Plus" @click="handleAdd">新增出库单</el-button>
-      <el-button type="success" :icon="Download" @click="handleExport">导出出库明细</el-button>
+      <el-button v-perm="'wms:stock-out:add'" type="primary" :icon="Plus" @click="handleAdd">新增出库单</el-button>
+      <el-button v-perm="'wms:stock-out:export'" type="success" :icon="Download" @click="handleExport">导出出库明细</el-button>
       <el-button :icon="RefreshRight" @click="loadData">刷新</el-button>
     </div>
 
@@ -62,14 +62,14 @@
         <el-table-column prop="createTime" label="创建时间" width="160" show-overflow-tooltip />
         <el-table-column label="操作" width="340" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleDetail(row)">详情</el-button>
+            <el-button v-perm="'wms:stock-out:list'" link type="primary" size="small" @click="handleDetail(row)">详情</el-button>
             <el-button link type="primary" size="small" @click="handlePrint(row)">打印</el-button>
-            <el-button v-if="row.status === 0" link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-if="row.status === 0" link type="primary" size="small" @click="handleSubmit(row)">提交</el-button>
-            <el-button v-if="row.status === 1" link type="warning" size="small" @click="handleLock(row)">锁定库存</el-button>
-            <el-button v-if="row.status === 2" link type="warning" size="small" @click="handlePick(row)">拣货确认</el-button>
-            <el-button v-if="row.status === 3" link type="success" size="small" @click="handleAudit(row)">审核出库</el-button>
-            <el-button v-if="[0, 1, 2, 3].includes(row.status)" link type="danger" size="small" @click="handleVoid(row)">作废</el-button>
+            <el-button v-if="row.status === 0" v-perm="'wms:stock-out:edit'" link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-if="row.status === 0" v-perm="'wms:stock-out:submit'" link type="primary" size="small" @click="handleSubmit(row)">提交</el-button>
+            <el-button v-if="row.status === 1" v-perm="'wms:stock-out:lock'" link type="warning" size="small" @click="handleLock(row)">锁定库存</el-button>
+            <el-button v-if="row.status === 2" v-perm="'wms:stock-out:pick'" link type="warning" size="small" @click="handlePick(row)">拣货确认</el-button>
+            <el-button v-if="row.status === 3" v-perm="'wms:stock-out:audit'" link type="success" size="small" @click="handleAudit(row)">审核出库</el-button>
+            <el-button v-if="[0, 1, 2, 3].includes(row.status)" v-perm="'wms:stock-out:void'" link type="danger" size="small" @click="handleVoid(row)">作废</el-button>
           </template>
         </el-table-column>
       </el-table>

@@ -25,7 +25,7 @@
 
     <!-- 操作按钮 -->
     <div class="action-bar">
-      <el-button type="primary" :icon="Plus" @click="handleAdd">新增盘点单</el-button>
+      <el-button v-perm="'wms:check:add'" type="primary" :icon="Plus" @click="handleAdd">新增盘点单</el-button>
       <el-button :icon="RefreshRight" @click="loadData">刷新</el-button>
     </div>
 
@@ -71,14 +71,14 @@
         <el-table-column prop="checkerName" label="盘点人" width="100" show-overflow-tooltip />
         <el-table-column label="操作" width="360" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleDetail(row)">详情</el-button>
-            <el-button v-if="row.status === 0" link type="primary" size="small" @click="handleLoadInventory(row)">加载库存</el-button>
-            <el-button v-if="row.status === 0" link type="warning" size="small" @click="handleStartCheck(row)">开始盘点</el-button>
-            <el-button v-if="row.status === 1" link type="primary" size="small" @click="handleInputActual(row)">录入实盘</el-button>
-            <el-button v-if="row.status === 1" link type="success" size="small" @click="handleFinishCheck(row)">完成盘点</el-button>
-            <el-button v-if="row.status === 2" link type="warning" size="small" @click="handleAudit(row)">审核</el-button>
-            <el-button v-if="row.status === 3" link type="success" size="small" @click="handleProcess(row)">处理</el-button>
-            <el-button v-if="[0, 1, 2, 3].includes(row.status)" link type="danger" size="small" @click="handleVoid(row)">作废</el-button>
+            <el-button v-perm="'wms:check:list'" link type="primary" size="small" @click="handleDetail(row)">详情</el-button>
+            <el-button v-if="row.status === 0" v-perm="'wms:check:add'" link type="primary" size="small" @click="handleLoadInventory(row)">加载库存</el-button>
+            <el-button v-if="row.status === 0" v-perm="'wms:check:submit'" link type="warning" size="small" @click="handleStartCheck(row)">开始盘点</el-button>
+            <el-button v-if="row.status === 1" v-perm="'wms:check:edit'" link type="primary" size="small" @click="handleInputActual(row)">录入实盘</el-button>
+            <el-button v-if="row.status === 1" v-perm="'wms:check:submit'" link type="success" size="small" @click="handleFinishCheck(row)">完成盘点</el-button>
+            <el-button v-if="row.status === 2" v-perm="'wms:check:audit'" link type="warning" size="small" @click="handleAudit(row)">审核</el-button>
+            <el-button v-if="row.status === 3" v-perm="'wms:check:handle'" link type="success" size="small" @click="handleProcess(row)">处理</el-button>
+            <el-button v-if="[0, 1, 2, 3].includes(row.status)" v-perm="'wms:check:void'" link type="danger" size="small" @click="handleVoid(row)">作废</el-button>
           </template>
         </el-table-column>
       </el-table>

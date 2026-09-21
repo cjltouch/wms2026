@@ -92,6 +92,7 @@ public class WmsUnitController {
         return R.ok();
     }
 
+    @PreAuthorize(hasAuthority = "wms:unit:export")
     @Operation(summary = "导出单位")
     @GetMapping("/export")
     public R<Void> export() {

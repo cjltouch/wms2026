@@ -22,8 +22,8 @@
 
     <!-- 操作按钮 -->
     <div class="action-bar">
-      <el-button type="primary" :icon="Plus" @click="handleAdd">新增</el-button>
-      <el-button type="danger" :icon="Delete" :disabled="!selectedIds.length" @click="handleBatchDelete">批量删除</el-button>
+      <el-button v-perm="'system:user:add'" type="primary" :icon="Plus" @click="handleAdd">新增</el-button>
+      <el-button v-perm="'system:user:remove'" type="danger" :icon="Delete" :disabled="!selectedIds.length" @click="handleBatchDelete">批量删除</el-button>
     </div>
 
     <!-- 表格 -->
@@ -49,9 +49,9 @@
       <el-table-column prop="loginTime" label="最后登录" width="160" align="center" />
       <el-table-column label="操作" width="220" align="center" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" :icon="Edit" @click="handleEdit(row)">编辑</el-button>
-          <el-button link type="warning" :icon="Key" @click="handleResetPwd(row)">重置密码</el-button>
-          <el-button link type="danger" :icon="Delete" :disabled="row.userId === 1" @click="handleDelete(row)">删除</el-button>
+          <el-button v-perm="'system:user:edit'" link type="primary" :icon="Edit" @click="handleEdit(row)">编辑</el-button>
+          <el-button v-perm="'system:user:resetPwd'" link type="warning" :icon="Key" @click="handleResetPwd(row)">重置密码</el-button>
+          <el-button v-perm="'system:user:remove'" link type="danger" :icon="Delete" :disabled="row.userId === 1" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
