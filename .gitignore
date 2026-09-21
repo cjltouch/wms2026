@@ -32,3 +32,4 @@ wms-frontend/.DS_Store
 # ===== 旧静态站示例（可按需删除） =====
 untitled/node_modules/
 untitled/dist/
+wms-backend/uploads/

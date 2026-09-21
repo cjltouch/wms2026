@@ -217,10 +217,13 @@ public class AuthController {
         }
         String safeFilename = "avatar_" + loginUser.getUserId() + "_" + System.currentTimeMillis() + ext;
 
-        // 保存到 upload-dir/avatars/
+        // 保存到 upload-dir/avatars/（确保用绝对路径，避免 Tomcat 临时目录漂移）
         File avatarDir = new File(uploadDir, "avatars");
+        if (!avatarDir.isAbsolute()) {
+            avatarDir = avatarDir.getAbsoluteFile();
+        }
         if (!avatarDir.exists() && !avatarDir.mkdirs()) {
-            throw new BizException("无法创建头像存储目录");
+            throw new BizException("无法创建头像存储目录：" + avatarDir.getAbsolutePath());
         }
         File destFile = new File(avatarDir, safeFilename);
         try {
