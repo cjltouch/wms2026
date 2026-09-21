@@ -37,6 +37,7 @@
     <!-- 操作按钮 -->
     <div class="action-bar">
       <el-button type="primary" :icon="Plus" @click="handleAdd">新增出库单</el-button>
+      <el-button type="success" :icon="Download" @click="handleExport">导出出库明细</el-button>
       <el-button :icon="RefreshRight" @click="loadData">刷新</el-button>
     </div>
 
@@ -273,7 +274,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Search, Refresh, Plus, RefreshRight } from '@element-plus/icons-vue'
+import { Search, Refresh, Plus, RefreshRight, Download } from '@element-plus/icons-vue'
 import { stockOutApi, warehouseApi, customerApi, goodsSpuApi } from '@/api'
 
 const router = useRouter()
@@ -396,7 +397,10 @@ async function loadData() {
   try {
     query.startDate = dateRange.value?.[0] || ''
     query.endDate = dateRange.value?.[1] || ''
-    const res: any = await stockOutApi.page(query)
+    const params: Record<string, any> = { ...query }
+    if (query.startDate) params.dateRangeStart = query.startDate + ' 00:00:00'
+    if (query.endDate) params.dateRangeEnd = query.endDate + ' 23:59:59'
+    const res: any = await stockOutApi.page(params)
     const rows = res.data?.rows || res.data?.records || []
     // 名称优先用后端冗余字段，缺失时前端按下拉列表反查兜底
     rows.forEach((r: any) => {
@@ -426,6 +430,31 @@ function handleReset() {
   query.endDate = ''
   query.page = 1
   loadData()
+}
+
+const exporting = ref(false)
+async function handleExport() {
+  exporting.value = true
+  try {
+    const params: Record<string, any> = {}
+    if (query.stockOutNo) params.stockOutNo = query.stockOutNo
+    if (query.type != null) params.type = query.type
+    if (query.startDate) params.dateRangeStart = query.startDate + ' 00:00:00'
+    if (query.endDate) params.dateRangeEnd = query.endDate + ' 23:59:59'
+    const res: any = await stockOutApi.export(params)
+    const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `出库明细_${new Date().toISOString().slice(0, 10)}.xlsx`
+    link.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch (e) {
+    ElMessage.error('导出失败')
+  } finally {
+    exporting.value = false
+  }
 }
 
 function handleAdd() {

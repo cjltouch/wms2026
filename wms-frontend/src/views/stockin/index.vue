@@ -34,6 +34,7 @@
     <!-- 操作 -->
     <div class="table-operations">
       <el-button type="primary" :icon="Plus" @click="handleAdd">新增入库单</el-button>
+      <el-button type="success" :icon="Download" @click="handleExport">导出入库明细</el-button>
     </div>
 
     <!-- 表格 -->
@@ -310,7 +311,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Search, Refresh, Plus, Edit, Delete, View, Check } from '@element-plus/icons-vue'
+import { Search, Refresh, Plus, Edit, Delete, View, Check, Download } from '@element-plus/icons-vue'
 import { stockInApi, warehouseApi, supplierApi, locationApi, goodsSpuApi } from '@/api'
 
 const router = useRouter()
@@ -413,7 +414,10 @@ async function loadData() {
   try {
     search.startDate = dateRange.value?.[0] || ''
     search.endDate = dateRange.value?.[1] || ''
-    const res: any = await stockInApi.page(search)
+    const params: Record<string, any> = { ...search }
+    if (search.startDate) params.dateRangeStart = search.startDate + ' 00:00:00'
+    if (search.endDate) params.dateRangeEnd = search.endDate + ' 23:59:59'
+    const res: any = await stockInApi.page(params)
     const d = res.data || {}
     const rows = d.rows || d.records || d.list || []
     // 名称优先用后端冗余字段，缺失时前端按下拉列表反查兜底
@@ -433,6 +437,27 @@ async function loadData() {
 function handleSearch() {
   search.page = 1
   loadData()
+}
+
+async function handleExport() {
+  try {
+    const params: Record<string, any> = {}
+    if (search.stockInNo) params.stockInNo = search.stockInNo
+    if (search.type != null) params.type = search.type
+    if (search.startDate) params.dateRangeStart = search.startDate + ' 00:00:00'
+    if (search.endDate) params.dateRangeEnd = search.endDate + ' 23:59:59'
+    const res: any = await stockInApi.export(params)
+    const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `入库明细_${new Date().toISOString().slice(0, 10)}.xlsx`
+    link.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch (e) {
+    ElMessage.error('导出失败')
+  }
 }
 
 function resetSearch() {

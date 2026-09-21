@@ -39,12 +39,37 @@ public class WmsPurchaseOrderServiceImpl extends ServiceImpl<WmsPurchaseOrderMap
 
     private final WmsPurchaseOrderItemMapper itemMapper;
     private final WmsPurchaseStatusLogMapper statusLogMapper;
+    private final com.example.wms.system.service.SysUserService sysUserService;
+
+    /** 批量回填创建人/审核人/采购员姓名 */
+    private void fillUserNames(List<WmsPurchaseOrder> orders) {
+        if (orders == null || orders.isEmpty()) return;
+        java.util.Set<Long> userIds = new java.util.HashSet<>();
+        for (WmsPurchaseOrder o : orders) {
+            if (o.getCreateBy() != null) userIds.add(o.getCreateBy());
+            if (o.getAuditBy() != null) userIds.add(o.getAuditBy());
+            if (o.getPurchaseBy() != null) userIds.add(o.getPurchaseBy());
+        }
+        if (userIds.isEmpty()) return;
+        Map<Long, String> nameMap = new java.util.HashMap<>();
+        sysUserService.listByIds(userIds).forEach(u -> nameMap.put(u.getUserId(),
+                org.springframework.util.StringUtils.hasText(u.getRealName())
+                        ? u.getRealName()
+                        : (org.springframework.util.StringUtils.hasText(u.getNickName())
+                                ? u.getNickName() : u.getUserName())));
+        for (WmsPurchaseOrder o : orders) {
+            o.setCreateName(o.getCreateBy() != null ? nameMap.get(o.getCreateBy()) : null);
+            o.setAuditName(o.getAuditBy() != null ? nameMap.get(o.getAuditBy()) : null);
+            o.setPurchaserName(o.getPurchaseBy() != null ? nameMap.get(o.getPurchaseBy()) : null);
+        }
+    }
 
     @Override
     public PageRsp<WmsPurchaseOrder> pagePurchase(PurchasePageReq req) {
         LambdaQueryWrapper<WmsPurchaseOrder> wrapper = buildQueryWrapper(req);
         wrapper.orderByDesc(WmsPurchaseOrder::getCreateTime);
         Page<WmsPurchaseOrder> page = this.page(new Page<>(req.getPageNum(), req.getPageSize()), wrapper);
+        fillUserNames(page.getRecords());
         return new PageRsp<>(page.getTotal(), page.getRecords(), req.getPageNum(), req.getPageSize());
     }
 
@@ -55,6 +80,7 @@ public class WmsPurchaseOrderServiceImpl extends ServiceImpl<WmsPurchaseOrderMap
         if (order == null) {
             throw new BizException(ResultCode.DATA_NOT_FOUND);
         }
+        fillUserNames(java.util.Collections.singletonList(order));
         rsp.setOrder(order);
         rsp.setItems(itemMapper.selectByPurchaseId(id));
         rsp.setStatusLogs(statusLogMapper.selectByBillId(id));

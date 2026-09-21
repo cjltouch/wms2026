@@ -43,6 +43,7 @@ export const goodsSpuApi = {
   batchDelete: (ids: string[]) => request({ url: '/api/wms/goods/spu/batch-delete', method: 'delete', data: { ids } }),
   batchChangeStatus: (data: any) => request({ url: '/api/wms/goods/spu/batch-change-status', method: 'put', data }),
   searchSku: (keyword: string, warehouseId?: string, supplierId?: string) => request({ url: '/api/wms/goods/sku/search', method: 'get', params: { keyword, warehouseId, supplierId } }),
+  export: (params: any) => request({ url: '/api/wms/goods/spu/export', method: 'get', params, responseType: 'blob' }),
 }
 
 // 分类
@@ -97,6 +98,7 @@ export const stockInApi = {
   unaudit: (id: string, remark?: string) => request({ url: '/api/wms/stock-in/unaudit', method: 'post', params: { id, remark } }),
   void: (id: string) => request({ url: '/api/wms/stock-in/void', method: 'post', params: { id } }),
   fromSource: (sourceBillNo: string) => request({ url: '/api/wms/stock-in/from-source', method: 'post', params: { sourceBillNo } }),
+  export: (params: any) => request({ url: '/api/wms/stock-in/export', method: 'get', params, responseType: 'blob' }),
 }
 
 // 出库
@@ -110,7 +112,8 @@ export const stockOutApi = {
   lockInventory: (id: string) => request({ url: '/api/wms/stock-out/lock-inventory', method: 'post', params: { id } }),
   pickConfirm: (id: string) => request({ url: '/api/wms/stock-out/pick-confirm', method: 'post', params: { id } }),
   audit: (data: any) => request({ url: '/api/wms/stock-out/audit', method: 'post', data }),
-  void: (id: string) => request({ url: '/api/wms/stock-out/void', method: 'post', params: { id } }),
+  void: (id: string) => request({ url: `/api/wms/stock-out/void`, method: 'post', params: { id } }),
+  export: (params: any) => request({ url: '/api/wms/stock-out/export', method: 'get', params, responseType: 'blob' }),
 }
 
 // 调拨

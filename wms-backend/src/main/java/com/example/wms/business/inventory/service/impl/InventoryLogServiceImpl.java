@@ -121,17 +121,24 @@ public class InventoryLogServiceImpl extends ServiceImpl<WmsInventoryLogMapper, 
         if (StringUtils.hasText(req.getBatchNo())) {
             wrapper.like(WmsInventoryLog::getBatchNo, req.getBatchNo());
         }
-        if (StringUtils.hasText(req.getStartDate())) {
+        // 时间范围：优先用 PageReq 的 dateRangeStart/dateRangeEnd（LocalDateTime），兼容 startDate/endDate（String）
+        LocalDateTime startTime = req.getDateRangeStart();
+        LocalDateTime endTime = req.getDateRangeEnd();
+        if (startTime == null && StringUtils.hasText(req.getStartDate())) {
             try {
-                LocalDateTime start = LocalDate.parse(req.getStartDate(), DATE_FMT).atStartOfDay();
-                wrapper.ge(WmsInventoryLog::getOperateTime, start);
+                startTime = LocalDate.parse(req.getStartDate(), DATE_FMT).atStartOfDay();
             } catch (Exception ignored) { /* ignore */ }
         }
-        if (StringUtils.hasText(req.getEndDate())) {
+        if (endTime == null && StringUtils.hasText(req.getEndDate())) {
             try {
-                LocalDateTime end = LocalDate.parse(req.getEndDate(), DATE_FMT).atTime(LocalTime.MAX);
-                wrapper.le(WmsInventoryLog::getOperateTime, end);
+                endTime = LocalDate.parse(req.getEndDate(), DATE_FMT).atTime(LocalTime.MAX);
             } catch (Exception ignored) { /* ignore */ }
+        }
+        if (startTime != null) {
+            wrapper.ge(WmsInventoryLog::getOperateTime, startTime);
+        }
+        if (endTime != null) {
+            wrapper.le(WmsInventoryLog::getOperateTime, endTime);
         }
         wrapper.orderByDesc(WmsInventoryLog::getOperateTime);
         Page<WmsInventoryLog> page = this.page(new Page<>(req.getPageNum(), req.getPageSize()), wrapper);

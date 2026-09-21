@@ -9,6 +9,8 @@ import com.example.wms.business.stockin.entity.WmsStockIn;
 import com.example.wms.common.BatchAuditReq;
 import com.example.wms.common.PageRsp;
 
+import jakarta.servlet.http.HttpServletResponse;
+
 public interface WmsStockInService extends IService<WmsStockIn> {
 
     /**
@@ -109,10 +111,10 @@ public interface WmsStockInService extends IService<WmsStockIn> {
     void allocateLocation(Long id);
 
     /**
-     * 导出入库单列表
+     * 导出入库明细（只导出已上架 status=3 的入库单）
      *
-     * @param req 分页查询请求参数
-     * @return 导出的Excel字节数组
+     * @param req      查询条件
+     * @param response HTTP响应
      */
-    byte[] export(StockInPageReq req);
+    void exportStockInItems(StockInPageReq req, HttpServletResponse response);
 }

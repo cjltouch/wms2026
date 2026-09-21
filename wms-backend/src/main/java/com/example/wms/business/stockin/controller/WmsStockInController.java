@@ -143,13 +143,9 @@ public class WmsStockInController {
         return R.ok();
     }
 
-    @Operation(summary = "导出入库单")
+    @Operation(summary = "导出入库明细（只导出已上架）")
     @GetMapping("/export")
-    public void export(StockInPageReq req, HttpServletResponse response) throws IOException {
-        byte[] data = stockInService.export(req);
-        String fileName = URLEncoder.encode("入库单列表.xlsx", StandardCharsets.UTF_8);
-        response.setContentType("application/octet-stream");
-        response.setHeader("Content-Disposition", "attachment; filename=" + fileName);
-        response.getOutputStream().write(data);
+    public void export(StockInPageReq req, HttpServletResponse response) {
+        stockInService.exportStockInItems(req, response);
     }
 }

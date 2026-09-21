@@ -148,4 +148,10 @@ public class WmsStockOutController {
         stockOutService.batchAudit(req);
         return R.ok();
     }
+
+    @Operation(summary = "导出出库明细（只导出已审核）")
+    @GetMapping("/export")
+    public void export(StockOutPageReq req, jakarta.servlet.http.HttpServletResponse response) {
+        stockOutService.exportStockOutItems(req, response);
+    }
 }

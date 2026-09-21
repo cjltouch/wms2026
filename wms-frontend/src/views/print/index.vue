@@ -96,7 +96,7 @@
           <div class="sign-block">
             <!-- 单据编号：跨页时签字人可据此确认所属单据 -->
             <div class="bill-no-bar">
-              <b>{{ billType === 'stock-in' ? '入库单号' : '出库单号' }}：{{ billNo }}</b>
+              <b>{{ billType === 'stock-in' ? '入库单号' : billType === 'purchase' ? '采购单号' : '出库单号' }}：{{ billNo }}</b>
             </div>
 
             <!-- 签字区 -->
@@ -131,7 +131,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { stockInApi, stockOutApi, warehouseApi, supplierApi, customerApi } from '@/api'
+import { stockInApi, stockOutApi, purchaseApi, warehouseApi, supplierApi, customerApi } from '@/api'
 
 type Align = 'left' | 'center' | 'right'
 interface Col {
@@ -164,8 +164,15 @@ const billNo = ref('')
 const signatures = ref<{ role: string; name?: string }[]>([])
 const printTime = ref('')
 
-/** 一式多联联次定义（第三联：出库单为客户联，入库单为供应商/送货方联） */
+/** 一式多联联次定义 */
 const copies = computed<CopyDef[]>(() => {
+  if (billType === 'purchase') {
+    return [
+      { key: 'purchaser', name: '采购员联', color: '#303133', desc: '采购员留存' },
+      { key: 'finance', name: '财务联', color: '#c0392b', desc: '财务记账凭证' },
+      { key: 'warehouse', name: '仓库联', color: '#b8860b', desc: '仓库管理收货' },
+    ]
+  }
   const partner = billType === 'stock-in'
     ? { name: '供应商联', desc: '送货方留存' }
     : { name: '客户联', desc: '客户签收留存' }
@@ -177,7 +184,8 @@ const copies = computed<CopyDef[]>(() => {
 })
 
 /** 当前勾选要打印的联次（默认三联全打） */
-const selectedCopies = ref<string[]>(['stub', 'finance', 'partner'])
+const selectedCopies = ref<string[]>([])
+
 const activeCopies = computed<CopyDef[]>(() =>
   copies.value.filter((c) => selectedCopies.value.includes(c.key))
 )
@@ -219,9 +227,12 @@ async function loadData() {
     const names = await loadNames()
     if (billType === 'stock-in') {
       await buildStockIn(names)
+    } else if (billType === 'purchase') {
+      await buildPurchase(names)
     } else {
       await buildStockOut(names)
     }
+    selectedCopies.value = copies.value.map((c) => c.key)
     printTime.value = nowStr()
   } catch (e) {
     ElMessage.error('加载单据数据失败')
@@ -249,8 +260,8 @@ async function buildStockIn(names: any) {
   ]
   columns.value = [
     { label: '序号', width: '45px', align: 'center', value: (_r, i) => i + 1 },
-    { label: '商品编码', width: '110px', value: (r) => r.skuCode },
-    { label: '内部编码', width: '110px', value: (r) => r.innerCode || '-' },
+    { label: '商品编码', width: '155px', value: (r) => r.skuCode },
+    { label: '内部编码', width: '80px', value: (r) => r.innerCode || '-' },
     { label: '商品名称', value: (r) => r.skuName },
     { label: '供应商', width: '120px', value: (r) => r.supplierName || '-' },
     { label: '规格', width: '110px', value: (r) => r.specText || '-' },
@@ -295,8 +306,8 @@ async function buildStockOut(names: any) {
   ]
   columns.value = [
     { label: '序号', width: '45px', align: 'center', value: (_r, i) => i + 1 },
-    { label: '商品编码', width: '110px', value: (r) => r.skuCode },
-    { label: '内部编码', width: '110px', value: (r) => r.innerCode || '-' },
+    { label: '商品编码', width: '155px', value: (r) => r.skuCode },
+    { label: '内部编码', width: '80px', value: (r) => r.innerCode || '-' },
     { label: '商品名称', value: (r) => r.skuName },
     { label: '供应商', width: '120px', value: (r) => r.supplierName || '-' },
     { label: '规格', width: '110px', value: (r) => r.specText || '-' },
@@ -323,6 +334,52 @@ async function buildStockOut(names: any) {
   ]
 }
 
+async function buildPurchase(names: any) {
+  const res: any = await purchaseApi.getById(billId)
+  const order = res.data?.order || {}
+  const list = res.data?.items || []
+  title.value = '采购订单'
+  billNo.value = order.purchaseNo || '-'
+  meta.value = [
+    { label: '采购单号', value: order.purchaseNo },
+    { label: '单据状态', value: purchaseStatusText(order.status) },
+    { label: '供应商', value: names.supplierName(order.supplierId) },
+    { label: '采购仓库', value: names.warehouseName(order.warehouseId) },
+    { label: '预计到货', value: order.expectDate || '-' },
+    { label: '采购员', value: order.purchaserName || '-' },
+    { label: '创建时间', value: order.createTime },
+    { label: '审核时间', value: order.auditTime || '-' },
+  ]
+  columns.value = [
+    { label: '序号', width: '45px', align: 'center', value: (_r, i) => i + 1 },
+    { label: '商品编码', width: '155px', value: (r) => r.skuCode },
+    { label: '内部编码', width: '80px', value: (r) => r.innerCode || '-' },
+    { label: '商品名称', value: (r) => r.skuName },
+    { label: '规格', width: '110px', value: (r) => r.specText || '-' },
+    { label: '单位', width: '60px', value: (r) => r.unitName || '-' },
+    { label: '采购数量', width: '75px', align: 'right', value: (r) => r.quantity ?? 0 },
+    { label: '采购单价', width: '90px', align: 'right', value: (r) => money(r.purchasePrice) },
+    { label: '金额小计', width: '100px', align: 'right', value: (r) => money(r.subtotal) },
+  ]
+  items.value = list
+  totals.value = [
+    { label: '总数量', value: order.totalQty ?? list.reduce((s: number, r: any) => s + Number(r.quantity ?? 0), 0) },
+    { label: '商品金额', value: money(order.subtotal) },
+    { label: '税额', value: money(order.taxAmount) },
+    { label: '最终金额', value: money(order.totalAmount) },
+  ]
+  remark.value = order.remark
+  // 签字区：采购员、财务、仓库 + 领导审批
+  signatures.value = [
+    { role: '采购员', name: order.purchaserName || '-' },
+    { role: '财务备案/审批' },
+    { role: '仓管收货' },
+    { role: '部门领导审批' },
+    { role: '分管领导审批' },
+  ]
+}
+
+
 function typeText(t: number) {
   return ({ 1: '采购入库', 2: '调拨入库', 3: '退货入库', 4: '其他入库' } as Record<number, string>)[t] || '-'
 }
@@ -334,6 +391,9 @@ function outTypeText(t: number) {
 }
 function outStatusText(s: number) {
   return ({ 0: '草稿', 1: '已提交', 2: '已锁定', 3: '拣货完成', 4: '已审核', 5: '已作废' } as Record<number, string>)[s] || '-'
+}
+function purchaseStatusText(s: number) {
+  return ({ 0: '草稿', 1: '已提交', 2: '已审核', 3: '部分到货', 4: '已到货', 5: '已作废' } as Record<number, string>)[s] || '-'
 }
 
 function doPrint() {

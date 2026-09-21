@@ -49,11 +49,12 @@
         </template>
       </el-table-column>
       <el-table-column prop="expectDate" label="预计到货" width="110" align="center" />
-      <el-table-column prop="createBy" label="创建人" width="100" />
+      <el-table-column prop="createName" label="创建人" width="100" />
       <el-table-column prop="createTime" label="创建时间" width="160" align="center" />
       <el-table-column label="操作" width="280" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" :icon="View" @click="handleDetail(row)">详情</el-button>
+          <el-button link type="primary" :icon="Printer" @click="handlePrint(row)">打印</el-button>
           <el-button v-if="row.status === 0" link type="primary" :icon="Edit" @click="handleEdit(row)">编辑</el-button>
           <el-button v-if="row.status === 0" link type="success" @click="handleRowSubmit(row)">提交</el-button>
           <el-button v-if="row.status === 1" link type="warning" :icon="Check" @click="handleAudit(row)">审核</el-button>
@@ -233,7 +234,8 @@
         </el-descriptions-item>
         <el-descriptions-item label="总数量">{{ detail.totalQty }}</el-descriptions-item>
         <el-descriptions-item label="总金额">¥{{ Number(detail.totalAmount || 0).toFixed(2) }}</el-descriptions-item>
-        <el-descriptions-item label="创建人">{{ detail.createBy }}</el-descriptions-item>
+        <el-descriptions-item label="创建人">{{ detail.createName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="审核人">{{ detail.auditName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ detail.createTime }}</el-descriptions-item>
         <el-descriptions-item label="备注" :span="3">{{ detail.remark || '-' }}</el-descriptions-item>
       </el-descriptions>
@@ -277,6 +279,7 @@
       </div>
       <template #footer>
         <el-button @click="detailVisible = false">关闭</el-button>
+        <el-button type="primary" :icon="Printer" @click="handlePrint(detail)">打印</el-button>
       </template>
     </el-dialog>
 
@@ -311,8 +314,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Search, Refresh, Plus, Edit, Delete, View, Check } from '@element-plus/icons-vue'
+import { Search, Refresh, Plus, Edit, Delete, View, Check, Printer } from '@element-plus/icons-vue'
 import { purchaseApi, warehouseApi, supplierApi, goodsSpuApi } from '@/api'
 
 const statusOptions = [
@@ -662,6 +666,12 @@ async function handleDetail(row: any) {
     detail.warehouseName = warehouseList.value.find(w => w.warehouseId == detail.warehouseId)?.warehouseName || '-'
     detailVisible.value = true
   } catch (e) { /* handled */ }
+}
+
+const router = useRouter()
+function handlePrint(row: any) {
+  const { href } = router.resolve({ path: `/print/purchase/${row.purchaseId}` })
+  window.open(href, '_blank')
 }
 
 onMounted(() => {

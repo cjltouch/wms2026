@@ -474,7 +474,10 @@ async function loadData() {
   try {
     query.startDate = dateRange.value?.[0] || ''
     query.endDate = dateRange.value?.[1] || ''
-    const res: any = await saleApi.page(query)
+    const params: Record<string, any> = { ...query }
+    if (query.startDate) params.dateRangeStart = query.startDate + ' 00:00:00'
+    if (query.endDate) params.dateRangeEnd = query.endDate + ' 23:59:59'
+    const res: any = await saleApi.page(params)
     const rows = res.data?.rows || res.data?.records || []
     // 后端分页只返回 warehouseId/customerId，前端根据下拉列表反查名称
     rows.forEach((r: any) => {

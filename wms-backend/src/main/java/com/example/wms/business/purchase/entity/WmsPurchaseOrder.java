@@ -84,6 +84,10 @@ public class WmsPurchaseOrder implements Serializable {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long auditBy;
 
+    /** 审核人姓名（非持久化，查询时回填） */
+    @TableField(exist = false)
+    private String auditName;
+
     /** 审核时间 */
     private LocalDateTime auditTime;
 
@@ -103,6 +107,14 @@ public class WmsPurchaseOrder implements Serializable {
     @TableField(fill = FieldFill.INSERT)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long createBy;
+
+    /** 创建人姓名（非持久化，查询时回填） */
+    @TableField(exist = false)
+    private String createName;
+
+    /** 采购员姓名（非持久化，查询时回填） */
+    @TableField(exist = false)
+    private String purchaserName;
 
     /** 创建时间 */
     @TableField(fill = FieldFill.INSERT)

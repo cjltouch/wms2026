@@ -12,6 +12,8 @@ import com.example.wms.common.PageRsp;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.servlet.http.HttpServletResponse;
+
 public interface WmsStockOutService extends IService<WmsStockOut> {
 
     /**
@@ -117,4 +119,12 @@ public interface WmsStockOutService extends IService<WmsStockOut> {
      * @param req 批量审核请求
      */
     void batchAudit(BatchAuditReq req);
+
+    /**
+     * 导出出库明细（只导出已审核 status=4 的出库单）
+     *
+     * @param req      查询条件
+     * @param response HTTP响应
+     */
+    void exportStockOutItems(StockOutPageReq req, HttpServletResponse response);
 }

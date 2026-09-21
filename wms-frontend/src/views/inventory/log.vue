@@ -138,7 +138,10 @@ async function loadData() {
   try {
     search.startDate = dateRange.value?.[0] || ''
     search.endDate = dateRange.value?.[1] || ''
-    const res: any = await inventoryApi.logPage(search)
+    const params: Record<string, any> = { ...search }
+    if (search.startDate) params.dateRangeStart = search.startDate + ' 00:00:00'
+    if (search.endDate) params.dateRangeEnd = search.endDate + ' 23:59:59'
+    const res: any = await inventoryApi.logPage(params)
     const d = res.data || {}
     tableData.value = d.rows || d.records || d.list || []
     total.value = d.total || 0

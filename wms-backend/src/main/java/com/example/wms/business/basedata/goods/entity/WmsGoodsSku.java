@@ -44,14 +44,14 @@ public class WmsGoodsSku implements Serializable {
 
     private String specText;
 
+    /** 颜色 */
+    private String color;
+
     @TableField("weight")
     private Integer weightG;
 
     @TableField("volume")
     private Integer volumeMl;
-
-    @TableField(exist = false)
-    private String color;
 
     @TableField(exist = false)
     private Integer batchFlag;

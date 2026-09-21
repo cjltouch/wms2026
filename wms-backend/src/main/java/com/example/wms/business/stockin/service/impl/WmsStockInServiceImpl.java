@@ -583,8 +583,84 @@ public class WmsStockInServiceImpl extends ServiceImpl<WmsStockInMapper, WmsStoc
     }
 
     @Override
-    public byte[] export(StockInPageReq req) {
-        return new byte[0];
+    public void exportStockInItems(StockInPageReq req, jakarta.servlet.http.HttpServletResponse response) {
+        // 强制只导出已上架（status=3）的入库单
+        req.setStatus(3);
+        LambdaQueryWrapper<WmsStockIn> wrapper = buildQueryWrapper(req);
+        wrapper.orderByDesc(WmsStockIn::getAuditTime);
+        List<WmsStockIn> orders = this.list(wrapper);
+        if (orders.isEmpty()) {
+            try {
+                response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                response.setCharacterEncoding("utf-8");
+                com.alibaba.excel.EasyExcel.write(response.getOutputStream(),
+                                com.example.wms.business.stockin.dto.rsp.StockInItemExportVo.class)
+                        .sheet("入库明细").doWrite(java.util.Collections.emptyList());
+            } catch (java.io.IOException e) {
+                throw new RuntimeException("导出入库明细失败: " + e.getMessage(), e);
+            }
+            return;
+        }
+        List<Long> orderIds = orders.stream().map(WmsStockIn::getStockInId).toList();
+        List<com.example.wms.business.stockin.entity.WmsStockInItem> items = itemMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.example.wms.business.stockin.entity.WmsStockInItem>()
+                        .in(com.example.wms.business.stockin.entity.WmsStockInItem::getStockInId, orderIds)
+                        .orderByAsc(com.example.wms.business.stockin.entity.WmsStockInItem::getStockInId)
+                        .orderByAsc(com.example.wms.business.stockin.entity.WmsStockInItem::getLineNo));
+        java.util.Map<Long, WmsStockIn> orderMap = orders.stream()
+                .collect(java.util.stream.Collectors.toMap(WmsStockIn::getStockInId, o -> o));
+        java.time.format.DateTimeFormatter dtFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        List<com.example.wms.business.stockin.dto.rsp.StockInItemExportVo> voList = items.stream().map(item -> {
+            com.example.wms.business.stockin.dto.rsp.StockInItemExportVo vo =
+                    new com.example.wms.business.stockin.dto.rsp.StockInItemExportVo();
+            WmsStockIn order = orderMap.get(item.getStockInId());
+            if (order != null) {
+                vo.setStockInNo(order.getStockInNo());
+                vo.setTypeText(inTypeText(order.getType()));
+                vo.setWarehouseName(order.getWarehouseName());
+                vo.setSupplierName(order.getSupplierName());
+                vo.setAuditTime(order.getAuditTime() != null ? order.getAuditTime().format(dtFmt) : "");
+            }
+            vo.setLineNo(item.getLineNo());
+            vo.setSkuCode(item.getSkuCode());
+            vo.setInnerCode(item.getInnerCode());
+            vo.setSkuName(item.getSkuName());
+            vo.setSpecText(item.getSpecText());
+            vo.setUnitName(item.getUnitName());
+            vo.setExpectedQty(item.getExpectedQty());
+            vo.setActualQty(item.getActualQty());
+            vo.setBatchNo(item.getBatchNo());
+            vo.setLocationCode(item.getLocationCode());
+            vo.setCostPrice(item.getCostPrice());
+            vo.setSubtotal(item.getSubtotal());
+            return vo;
+        }).toList();
+        try {
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding("utf-8");
+            String fileName = java.net.URLEncoder.encode(
+                    "入库明细_" + java.time.LocalDate.now().toString() + ".xlsx",
+                    java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+            response.setHeader("Content-disposition", "attachment;filename*=utf-8''" + fileName);
+            com.alibaba.excel.EasyExcel.write(response.getOutputStream(),
+                            com.example.wms.business.stockin.dto.rsp.StockInItemExportVo.class)
+                    .sheet("入库明细")
+                    .doWrite(voList);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("导出入库明细失败: " + e.getMessage(), e);
+        }
+    }
+
+    /** 入库类型文本 */
+    private String inTypeText(Integer type) {
+        if (type == null) return "";
+        return switch (type) {
+            case 1 -> "采购入库";
+            case 2 -> "调拨入库";
+            case 3 -> "退货入库";
+            case 4 -> "其他入库";
+            default -> String.valueOf(type);
+        };
     }
 
     private LambdaQueryWrapper<WmsStockIn> buildQueryWrapper(StockInPageReq req) {

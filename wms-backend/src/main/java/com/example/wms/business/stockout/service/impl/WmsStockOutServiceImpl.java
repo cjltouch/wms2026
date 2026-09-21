@@ -627,6 +627,91 @@ public class WmsStockOutServiceImpl extends ServiceImpl<WmsStockOutMapper, WmsSt
         auditStockOut(auditReq);
     }
 
+    @Override
+    public void exportStockOutItems(StockOutPageReq req, jakarta.servlet.http.HttpServletResponse response) {
+        // 强制只导出已审核（status=4）的出库单
+        req.setStatus(4);
+        LambdaQueryWrapper<WmsStockOut> wrapper = buildQueryWrapper(req);
+        wrapper.orderByDesc(WmsStockOut::getAuditTime);
+        List<WmsStockOut> orders = this.list(wrapper);
+        if (orders.isEmpty()) {
+            try {
+                response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                response.setCharacterEncoding("utf-8");
+                com.alibaba.excel.EasyExcel.write(response.getOutputStream(),
+                                com.example.wms.business.stockout.dto.rsp.StockOutItemExportVo.class)
+                        .sheet("出库明细").doWrite(java.util.Collections.emptyList());
+            } catch (java.io.IOException e) {
+                throw new RuntimeException("导出出库明细失败: " + e.getMessage(), e);
+            }
+            return;
+        }
+        // 收集所有出库单ID，一次性查明细
+        List<Long> orderIds = orders.stream().map(WmsStockOut::getStockOutId).toList();
+        List<WmsStockOutItem> items = itemMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<WmsStockOutItem>()
+                        .in(WmsStockOutItem::getStockOutId, orderIds)
+                        .orderByAsc(WmsStockOutItem::getStockOutId)
+                        .orderByAsc(WmsStockOutItem::getLineNo));
+        // 订单ID -> 订单映射
+        Map<Long, WmsStockOut> orderMap = orders.stream()
+                .collect(java.util.stream.Collectors.toMap(WmsStockOut::getStockOutId, o -> o));
+        java.time.format.DateTimeFormatter dtFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        List<com.example.wms.business.stockout.dto.rsp.StockOutItemExportVo> voList = items.stream().map(item -> {
+            com.example.wms.business.stockout.dto.rsp.StockOutItemExportVo vo =
+                    new com.example.wms.business.stockout.dto.rsp.StockOutItemExportVo();
+            WmsStockOut order = orderMap.get(item.getStockOutId());
+            if (order != null) {
+                vo.setStockOutNo(order.getStockOutNo());
+                vo.setTypeText(outTypeText(order.getType()));
+                vo.setWarehouseName(order.getWarehouseName());
+                vo.setCustomerName(order.getCustomerName());
+                vo.setAuditTime(order.getAuditTime() != null ? order.getAuditTime().format(dtFmt) : "");
+            }
+            vo.setLineNo(item.getLineNo());
+            vo.setSkuCode(item.getSkuCode());
+            vo.setInnerCode(item.getInnerCode());
+            vo.setSkuName(item.getSkuName());
+            vo.setSpecText(item.getSpecText());
+            vo.setUnitName(item.getUnitName());
+            vo.setExpectedQty(item.getExpectedQty());
+            vo.setActualQty(item.getActualQty());
+            vo.setBatchNo(item.getBatchNo());
+            vo.setLocationCode(item.getLocationCode());
+            vo.setCostPrice(item.getCostPrice());
+            vo.setSubtotalCost(item.getSubtotalCost());
+            vo.setSalePrice(item.getSalePrice());
+            vo.setSubtotalSale(item.getSubtotalSale());
+            return vo;
+        }).toList();
+        try {
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding("utf-8");
+            String fileName = java.net.URLEncoder.encode(
+                    "出库明细_" + java.time.LocalDate.now().toString() + ".xlsx",
+                    java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+            response.setHeader("Content-disposition", "attachment;filename*=utf-8''" + fileName);
+            com.alibaba.excel.EasyExcel.write(response.getOutputStream(),
+                            com.example.wms.business.stockout.dto.rsp.StockOutItemExportVo.class)
+                    .sheet("出库明细")
+                    .doWrite(voList);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("导出出库明细失败: " + e.getMessage(), e);
+        }
+    }
+
+    /** 出库类型文本 */
+    private String outTypeText(Integer type) {
+        if (type == null) return "";
+        return switch (type) {
+            case 1 -> "销售出库";
+            case 2 -> "调拨出库";
+            case 3 -> "退货出库";
+            case 4 -> "其他出库";
+            default -> String.valueOf(type);
+        };
+    }
+
     private LambdaQueryWrapper<WmsStockOut> buildQueryWrapper(StockOutPageReq req) {
         LambdaQueryWrapper<WmsStockOut> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(req.getStockOutNo())) {

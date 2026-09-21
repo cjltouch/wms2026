@@ -38,6 +38,7 @@
     <!-- 操作按钮 -->
     <div class="action-bar">
       <el-button type="primary" :icon="Plus" @click="handleAdd">新增</el-button>
+      <el-button type="success" :icon="Download" @click="handleExport">导出商品</el-button>
       <el-button type="success" :icon="Top" :disabled="!selectedIds.length" @click="handleBatchStatus('0')">批量上架</el-button>
       <el-button type="warning" :icon="Bottom" :disabled="!selectedIds.length" @click="handleBatchStatus('1')">批量下架</el-button>
       <el-button type="danger" :icon="Delete" :disabled="!selectedIds.length" @click="handleBatchDelete">批量删除</el-button>
@@ -302,7 +303,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Search, Refresh, Plus, Edit, Delete, Top, Bottom, View } from '@element-plus/icons-vue'
+import { Search, Refresh, Plus, Edit, Delete, Top, Bottom, View, Download } from '@element-plus/icons-vue'
 import { goodsSpuApi, categoryApi, brandApi, unitApi, supplierApi } from '@/api'
 
 const loading = ref(false)
@@ -401,6 +402,27 @@ async function loadData() {
     // handled by interceptor
   } finally {
     loading.value = false
+  }
+}
+
+async function handleExport() {
+  try {
+    const params: Record<string, any> = {}
+    if (queryParams.keyword) params.keyword = queryParams.keyword
+    if (queryParams.categoryId) params.categoryId = queryParams.categoryId
+    if (queryParams.brandId) params.brandId = queryParams.brandId
+    if (queryParams.status) params.status = queryParams.status
+    const res: any = await goodsSpuApi.export(params)
+    const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `商品列表_${new Date().toISOString().slice(0, 10)}.xlsx`
+    link.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch (e) {
+    ElMessage.error('导出失败')
   }
 }
 

@@ -107,7 +107,7 @@ public class WmsGoodsController {
 
     @Operation(summary = "导出SPU")
     @GetMapping("/spu/export")
-    public R<Void> exportSpu() {
-        return R.ok();
+    public void exportSpu(GoodsSpuPageReq req, jakarta.servlet.http.HttpServletResponse response) {
+        wmsGoodsSpuService.exportSpu(req, response);
     }
 }
