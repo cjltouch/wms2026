@@ -27,4 +27,12 @@ public interface SysUserService extends IService<SysUser> {
     void updateUser(SysUser user, List<Long> roleIds);
 
     void deleteUser(List<Long> userIds);
+
+    /**
+     * 更新指定用户头像 URL
+     *
+     * @param userId 用户 ID
+     * @param avatar 头像 URL（相对路径）
+     */
+    void updateAvatar(Long userId, String avatar);
 }

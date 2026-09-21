@@ -1,8 +1,10 @@
 package com.example.wms.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.time.LocalDate;
@@ -12,6 +14,10 @@ import java.time.format.DateTimeFormatter;
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 
+    /** 上传根目录（相对路径解析为应用启动目录） */
+    @Value("${wms.upload-dir:uploads}")
+    private String uploadDir;
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
@@ -20,6 +26,17 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);
+    }
+
+    /**
+     * 把磁盘上的 uploads/ 目录映射为 /uploads/** 的可访问静态资源。
+     * 这样前端可以通过 http://host:port/wms-api/uploads/avatars/xxx.png 直接访问头像文件。
+     */
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        String absPath = new java.io.File(uploadDir).getAbsolutePath();
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:" + absPath + java.io.File.separator);
     }
 
     /**

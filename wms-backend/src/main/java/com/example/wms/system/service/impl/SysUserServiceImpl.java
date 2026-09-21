@@ -147,4 +147,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         this.removeByIds(userIds);
         sysUserRoleService.deleteByUserIds(userIds);
     }
+
+    @Override
+    public void updateAvatar(Long userId, String avatar) {
+        SysUser user = new SysUser();
+        user.setUserId(userId);
+        user.setAvatar(avatar);
+        this.updateById(user);
+    }
 }

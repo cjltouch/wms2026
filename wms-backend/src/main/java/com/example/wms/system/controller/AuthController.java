@@ -9,6 +9,7 @@ import com.example.wms.auth.JwtTokenProvider;
 import com.example.wms.auth.LoginUser;
 import com.example.wms.common.R;
 import com.example.wms.common.exception.AuthException;
+import com.example.wms.common.exception.BizException;
 import com.example.wms.config.JwtConfig;
 import com.example.wms.system.dto.req.LoginReq;
 import com.example.wms.system.dto.req.RefreshTokenReq;
@@ -24,15 +25,22 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Tag(name = "认证管理")
@@ -40,6 +48,18 @@ import java.util.concurrent.TimeUnit;
 @RequestMapping("/api/system/auth")
 @RequiredArgsConstructor
 public class AuthController {
+
+    /** 上传根目录（相对于应用运行目录），头像会存到该目录下的 avatars/ 子目录 */
+    @Value("${wms.upload-dir:uploads}")
+    private String uploadDir;
+
+    /** 允许上传的图片 MIME 类型 */
+    private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
+            "image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp", "image/svg+xml"
+    );
+
+    /** 单文件最大 5MB */
+    private static final long MAX_AVATAR_SIZE = 5 * 1024 * 1024L;
 
     private final SysUserService sysUserService;
     private final SysMenuService sysMenuService;
@@ -168,6 +188,69 @@ public class AuthController {
         rsp.setUuid(IdUtil.fastSimpleUUID());
         rsp.setImg("data:image/svg+xml;base64," + captcha.getImageBase64Data());
         return R.ok(rsp);
+    }
+
+    @Operation(summary = "上传头像（同时更新当前用户头像）")
+    @PostMapping("/upload-avatar")
+    public R<Map<String, String>> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        LoginUser loginUser = AuthContextHolder.get();
+        if (loginUser == null) {
+            throw new AuthException("未登录");
+        }
+        if (file.isEmpty()) {
+            throw new BizException("请选择要上传的图片");
+        }
+        if (file.getSize() > MAX_AVATAR_SIZE) {
+            throw new BizException("头像文件大小不能超过 5MB");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType.toLowerCase())) {
+            throw new BizException("仅支持 PNG、JPG、GIF、WEBP、SVG 格式的图片");
+        }
+
+        // 构造安全的文件名：userId + 时间戳 + 原始扩展名
+        String originalFilename = file.getOriginalFilename();
+        String ext = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            ext = originalFilename.substring(originalFilename.lastIndexOf('.'));
+            if (ext.length() > 8) ext = ext.substring(0, 9); // 防超长扩展名
+        }
+        String safeFilename = "avatar_" + loginUser.getUserId() + "_" + System.currentTimeMillis() + ext;
+
+        // 保存到 upload-dir/avatars/
+        File avatarDir = new File(uploadDir, "avatars");
+        if (!avatarDir.exists() && !avatarDir.mkdirs()) {
+            throw new BizException("无法创建头像存储目录");
+        }
+        File destFile = new File(avatarDir, safeFilename);
+        try {
+            file.transferTo(destFile);
+        } catch (IOException e) {
+            throw new BizException("头像保存失败：" + e.getMessage());
+        }
+
+        // 构造可访问的相对路径（由 WebMvcConfig 资源映射暴露）
+        String avatarUrl = "/uploads/avatars/" + safeFilename;
+        sysUserService.updateAvatar(loginUser.getUserId(), avatarUrl);
+
+        Map<String, String> result = new HashMap<>();
+        result.put("avatar", avatarUrl);
+        return R.ok(result);
+    }
+
+    @Operation(summary = "更新当前用户头像（使用指定 URL）")
+    @PutMapping("/update-avatar")
+    public R<Void> updateAvatar(@RequestBody Map<String, String> body) {
+        LoginUser loginUser = AuthContextHolder.get();
+        if (loginUser == null) {
+            throw new AuthException("未登录");
+        }
+        String avatar = body.get("avatar");
+        if (avatar == null || avatar.isBlank()) {
+            throw new BizException("头像地址不能为空");
+        }
+        sysUserService.updateAvatar(loginUser.getUserId(), avatar);
+        return R.ok();
     }
 
     private String getClientIp(HttpServletRequest request) {

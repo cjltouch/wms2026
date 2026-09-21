@@ -60,7 +60,7 @@
         <div class="header-right">
           <el-dropdown @command="handleCommand">
             <span class="user-info">
-              <el-avatar :size="32" :icon="UserFilled" />
+              <el-avatar :size="32" :src="userStore.avatar" :icon="UserFilled" />
               <span class="username">{{ userStore.realName || userStore.username || 'Admin' }}</span>
               <el-icon><ArrowDown /></el-icon>
             </span>
@@ -87,12 +87,57 @@
     </el-container>
 
     <!-- 个人中心弹窗 -->
-    <el-dialog v-model="profileVisible" title="个人中心" width="440px">
-      <el-descriptions :column="1" border size="small">
-        <el-descriptions-item label="用户名">{{ userStore.username || '—' }}</el-descriptions-item>
-        <el-descriptions-item label="昵称">{{ userStore.realName || '—' }}</el-descriptions-item>
-        <el-descriptions-item label="角色">{{ (userStore.roles || []).join('、') || '—' }}</el-descriptions-item>
-      </el-descriptions>
+    <el-dialog v-model="profileVisible" title="个人中心" width="560px">
+      <!-- 上半区：头像 + 基本信息 -->
+      <div class="profile-top">
+        <div class="profile-avatar-area">
+          <el-avatar :size="96" :src="userStore.avatar" :icon="UserFilled" />
+          <div class="avatar-actions">
+            <el-button size="small" :loading="avatarLoading" @click="triggerAvatarUpload">
+              上传头像
+            </el-button>
+            <input
+              ref="avatarInputRef"
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
+              style="display:none"
+              @change="handleAvatarFileChange"
+            />
+          </div>
+          <div class="avatar-tip">支持 PNG/JPG/GIF/WEBP/SVG，最大 5MB</div>
+        </div>
+        <div class="profile-info">
+          <div class="info-row">
+            <span class="info-label">用户名</span>
+            <span class="info-value">{{ userStore.username || '—' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">昵称</span>
+            <span class="info-value">{{ userStore.realName || '—' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">角色</span>
+            <span class="info-value">{{ (userStore.roles || []).join('、') || '—' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 默认卡通头像选择 -->
+      <div class="profile-section-title">选择默认卡通头像</div>
+      <div class="default-avatar-grid">
+        <div
+          v-for="av in defaultAvatarList"
+          :key="av"
+          class="default-avatar-item"
+          :class="{ active: userStore.avatarRaw === av }"
+          @click="selectDefaultAvatar(av)"
+        >
+          <img :src="av" :alt="av" />
+          <el-icon v-if="userStore.avatarRaw === av" class="check-icon"><Check /></el-icon>
+        </div>
+      </div>
+
+      <!-- 修改密码 -->
       <div class="profile-section-title">修改密码</div>
       <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" label-width="90px">
         <el-form-item label="原密码" prop="oldPassword">
@@ -106,7 +151,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="profileVisible = false">取消</el-button>
+        <el-button @click="profileVisible = false">关闭</el-button>
         <el-button type="primary" :loading="pwdLoading" @click="submitChangePwd">修改密码</el-button>
       </template>
     </el-dialog>
@@ -119,8 +164,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useTabsStore } from '@/store/tabs'
 import { ElMessageBox, ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { UserFilled } from '@element-plus/icons-vue'
-import { changePassword } from '@/api/auth'
+import { UserFilled, Check } from '@element-plus/icons-vue'
+import { changePassword, uploadAvatar as uploadAvatarApi, updateAvatar as updateAvatarApi } from '@/api/auth'
+import { getDefaultAvatarList } from '@/utils/avatar'
 import TagsView from './components/TagsView.vue'
 
 const route = useRoute()
@@ -218,6 +264,61 @@ async function submitChangePwd() {
   })
 }
 
+// ===== 个人中心：头像管理 =====
+const defaultAvatarList = getDefaultAvatarList()
+const avatarInputRef = ref<HTMLInputElement | null>(null)
+const avatarLoading = ref(false)
+
+/** 点击上传按钮 → 触发隐藏的 file input */
+function triggerAvatarUpload() {
+  avatarInputRef.value?.click()
+}
+
+/** 文件选择后 → 校验 + 上传 */
+async function handleAvatarFileChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  // 清理 input，确保下次选择同一文件也能触发 change
+  input.value = ''
+
+  // 前端校验
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml']
+  if (!allowedTypes.includes(file.type.toLowerCase())) {
+    ElMessage.error('仅支持 PNG、JPG、GIF、WEBP、SVG 格式')
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    ElMessage.error('头像文件大小不能超过 5MB')
+    return
+  }
+
+  avatarLoading.value = true
+  try {
+    const res: any = await uploadAvatarApi(file)
+    const url = res.data?.avatar || res.avatar
+    if (url) {
+      userStore.setAvatar(url)
+      ElMessage.success('头像上传成功')
+    }
+  } catch (e) {
+    // handled by interceptor
+  } finally {
+    avatarLoading.value = false
+  }
+}
+
+/** 选择默认卡通头像 → 调后端保存 */
+async function selectDefaultAvatar(avatarPath: string) {
+  try {
+    await updateAvatarApi(avatarPath)
+    userStore.setAvatar(avatarPath)
+    ElMessage.success('头像已更换')
+  } catch (e) {
+    // handled by interceptor
+  }
+}
+
 /**
  * 把父路由路径 + 子路由路径拼接成一个干净的绝对路径，
  * 避免 `'/' + 'dashboard'` 拼出 `//dashboard` 双斜杠导致跳转失败。
@@ -310,6 +411,102 @@ function resolveMenuPath(parentPath: string, childPath: string): string {
     background: #409eff;
     margin-right: 6px;
     vertical-align: middle;
+  }
+}
+
+.profile-top {
+  display: flex;
+  gap: 24px;
+  padding: 8px 0 16px;
+  border-bottom: 1px solid #f0f0f0;
+
+  .profile-avatar-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+
+    .avatar-tip {
+      font-size: 12px;
+      color: #999;
+    }
+  }
+
+  .profile-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .info-label {
+        width: 60px;
+        font-size: 13px;
+        color: #909399;
+        flex-shrink: 0;
+      }
+
+      .info-value {
+        font-size: 14px;
+        color: #303133;
+      }
+    }
+  }
+}
+
+.default-avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+
+  .default-avatar-item {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    overflow: visible;
+    transition: all 0.2s;
+
+    img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 2px solid #ebeef5;
+      transition: border-color 0.2s;
+    }
+
+    &:hover img {
+      border-color: #409eff;
+    }
+
+    &.active {
+      border-color: #409eff;
+
+      img {
+        border-color: #409eff;
+      }
+    }
+
+    .check-icon {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 20px;
+      height: 20px;
+      background: #409eff;
+      border-radius: 50%;
+      color: #fff;
+      padding: 2px;
+      border: 2px solid #fff;
+    }
   }
 }
 
