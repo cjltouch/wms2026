@@ -260,6 +260,7 @@
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: 'Transfer' })
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Search, Refresh, Plus, RefreshRight } from '@element-plus/icons-vue'

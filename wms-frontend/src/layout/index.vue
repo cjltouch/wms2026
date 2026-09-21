@@ -74,11 +74,14 @@
         </div>
       </el-header>
 
+      <!-- 多标签页导航 -->
+      <TagsView />
+
       <el-main class="main-content">
         <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
-            <component :is="Component" />
-          </transition>
+          <keep-alive :include="tabsStore.cachedViewNames">
+            <component :is="Component" :key="route.fullPath" />
+          </keep-alive>
         </router-view>
       </el-main>
     </el-container>
@@ -114,13 +117,16 @@
 import { ref, reactive, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
+import { useTabsStore } from '@/store/tabs'
 import { ElMessageBox, ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
 import { changePassword } from '@/api/auth'
+import TagsView from './components/TagsView.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const tabsStore = useTabsStore()
 
 const isCollapse = ref(false)
 const activeMenu = computed(() => route.path)
@@ -156,6 +162,7 @@ function handleCommand(command: string) {
       type: 'warning'
     }).then(() => {
       userStore.resetState()
+      tabsStore.reset()
       ElMessage.success('已退出登录')
       router.push('/login')
     })

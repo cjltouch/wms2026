@@ -74,6 +74,7 @@
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: 'GoodsCategory' })
 import { ref, reactive, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Plus, Edit, Delete, Refresh, Folder, Document } from '@element-plus/icons-vue'

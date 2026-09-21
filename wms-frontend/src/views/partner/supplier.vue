@@ -154,6 +154,7 @@
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: 'Supplier' })
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue'

@@ -70,6 +70,7 @@
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: 'Dashboard' })
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { dashboardApi } from '@/api'

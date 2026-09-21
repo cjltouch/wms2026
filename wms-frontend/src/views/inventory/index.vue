@@ -84,6 +84,7 @@
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: 'Inventory' })
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Refresh, Download } from '@element-plus/icons-vue'
