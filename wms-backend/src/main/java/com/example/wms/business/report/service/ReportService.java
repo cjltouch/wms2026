@@ -88,6 +88,7 @@ public class ReportService {
         head.add(List.of("小计金额"));
         head.add(List.of("批次号"));
         head.add(List.of("库位"));
+        head.add(List.of("备注"));
         return head;
     }
 
@@ -222,6 +223,7 @@ public class ReportService {
                 case 14 -> "subtotal";
                 case 15 -> "batch_no";
                 case 16 -> "location_code";
+                case 17 -> "remark";
                 default -> "";
             };
             case "出库明细表" -> switch (index) {

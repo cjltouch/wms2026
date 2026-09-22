@@ -620,6 +620,7 @@ public class WmsStockInServiceImpl extends ServiceImpl<WmsStockInMapper, WmsStoc
                 vo.setWarehouseName(order.getWarehouseName());
                 vo.setSupplierName(order.getSupplierName());
                 vo.setAuditTime(order.getAuditTime() != null ? order.getAuditTime().format(dtFmt) : "");
+                vo.setRemark(order.getRemark());
             }
             vo.setLineNo(item.getLineNo());
             vo.setSkuCode(item.getSkuCode());
@@ -657,8 +658,11 @@ public class WmsStockInServiceImpl extends ServiceImpl<WmsStockInMapper, WmsStoc
         return switch (type) {
             case 1 -> "采购入库";
             case 2 -> "调拨入库";
-            case 3 -> "退货入库";
-            case 4 -> "其他入库";
+            case 3 -> "生产入库";
+            case 4 -> "盘盈入库";
+            case 5 -> "其他入库";
+            case 6 -> "销售退货";
+            case 7 -> "拒收退货";
             default -> String.valueOf(type);
         };
     }

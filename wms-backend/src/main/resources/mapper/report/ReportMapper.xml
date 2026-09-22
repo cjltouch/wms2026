@@ -152,7 +152,7 @@
         SELECT
             si.stock_in_no,
             si.create_time AS in_time,
-            CASE si.type
+            CASE si.in_type
                 WHEN 1 THEN '采购' WHEN 2 THEN '调拨' WHEN 3 THEN '生产'
                 WHEN 4 THEN '盘盈' WHEN 5 THEN '其他' WHEN 6 THEN '销售退货' WHEN 7 THEN '拒收退货'
                 ELSE '未知' END AS type_name,
@@ -169,7 +169,8 @@
             sii.cost_price,
             sii.subtotal,
             sii.batch_no,
-            sii.location_code
+            sii.location_code,
+            si.remark
         FROM wms_stock_in si
         LEFT JOIN wms_warehouse w ON si.warehouse_id = w.warehouse_id AND w.deleted = 0
         LEFT JOIN wms_supplier s ON si.supplier_id = s.supplier_id AND s.deleted = 0

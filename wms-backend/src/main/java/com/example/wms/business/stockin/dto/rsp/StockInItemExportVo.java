@@ -85,4 +85,8 @@ public class StockInItemExportVo implements Serializable {
     @ExcelProperty("金额小计")
     @ColumnWidth(12)
     private BigDecimal subtotal;
+
+    @ExcelProperty("备注")
+    @ColumnWidth(24)
+    private String remark;
 }
