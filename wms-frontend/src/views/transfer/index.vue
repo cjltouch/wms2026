@@ -87,7 +87,7 @@
         <el-row :gutter="16">
           <el-col :span="8">
             <el-form-item label="调拨单号" prop="transferNo">
-              <el-input v-model="form.transferNo" placeholder="请输入调拨单号" />
+              <el-input v-model="form.transferNo" placeholder="自动生成" :disabled="isEdit" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -407,6 +407,10 @@ function handleAdd() {
   isEdit.value = false
   formTitle.value = '新增调拨单'
   Object.assign(form, initForm())
+  // 预生成调拨单号
+  transferApi.generateNo().then((res: any) => {
+    if (res?.data) form.transferNo = res.data
+  }).catch(() => {})
   formVisible.value = true
 }
 

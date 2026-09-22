@@ -36,7 +36,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -890,5 +892,29 @@ public class WmsStockOutServiceImpl extends ServiceImpl<WmsStockOutMapper, WmsSt
         logEntity.setOperateTime(LocalDateTime.now());
         logEntity.setRemark(remark);
         statusLogMapper.insert(logEntity);
+    }
+
+    private static final String STOCK_OUT_NO_PREFIX = "CK";
+    private static final DateTimeFormatter NO_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final int NO_SEQ_LEN = 3;
+
+    @Override
+    public String generateStockOutNo() {
+        String today = LocalDate.now().format(NO_DATE_FMT);
+        String prefix = STOCK_OUT_NO_PREFIX + today;
+        WmsStockOut last = this.lambdaQuery()
+                .likeRight(WmsStockOut::getStockOutNo, prefix)
+                .orderByDesc(WmsStockOut::getStockOutNo)
+                .last("LIMIT 1")
+                .one();
+        int nextSeq = 1;
+        if (last != null && StringUtils.hasText(last.getStockOutNo())) {
+            String no = last.getStockOutNo();
+            String tail = no.length() > prefix.length() ? no.substring(prefix.length()) : "";
+            if (tail.matches("\\d+")) {
+                nextSeq = Integer.parseInt(tail) + 1;
+            }
+        }
+        return prefix + String.format("%0" + NO_SEQ_LEN + "d", nextSeq);
     }
 }

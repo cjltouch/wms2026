@@ -60,8 +60,18 @@
       </el-table-column>
       <el-table-column label="变动数量" width="110" align="right">
         <template #default="{ row }">
-          <span :class="row.direction === 1 ? 'text-success' : 'text-danger'">
-            {{ row.direction === 1 ? '+' : '-' }}{{ Number(row.qtyChange || 0).toFixed(2) }}
+          <span :class="row.direction === 1 ? 'text-success' : (row.direction === -1 ? 'text-danger' : '')">
+            <template v-if="row.direction === 1">+</template>
+            <template v-else-if="row.direction === -1">-</template>
+            {{ Number(row.qtyChange || 0).toFixed(2) }}
+          </span>
+        </template>
+      </el-table-column>
+      <el-table-column label="锁定变动" width="110" align="right">
+        <template #default="{ row }">
+          <span :class="row.changeLocked > 0 ? 'text-warning' : (row.changeLocked < 0 ? 'text-danger' : '')">
+            <template v-if="row.changeLocked > 0">+</template>
+            {{ Number(row.changeLocked || 0).toFixed(2) }}
           </span>
         </template>
       </el-table-column>

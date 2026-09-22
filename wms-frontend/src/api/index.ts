@@ -119,6 +119,7 @@ export const stockOutApi = {
   audit: (data: any) => request({ url: '/api/wms/stock-out/audit', method: 'post', data }),
   void: (id: string) => request({ url: `/api/wms/stock-out/void`, method: 'post', params: { id } }),
   export: (params: any) => request({ url: '/api/wms/stock-out/export', method: 'get', params, responseType: 'blob' }),
+  generateNo: () => request({ url: '/api/wms/stock-out/generate-no', method: 'get' }),
 }
 
 // 调拨
@@ -133,6 +134,7 @@ export const transferApi = {
   confirmOut: (id: string) => request({ url: '/api/wms/transfer/confirm-out', method: 'post', params: { id } }),
   confirmIn: (id: string) => request({ url: '/api/wms/transfer/confirm-in', method: 'post', params: { id } }),
   void: (id: string) => request({ url: '/api/wms/transfer/void', method: 'post', params: { id } }),
+  generateNo: () => request({ url: '/api/wms/transfer/generate-no', method: 'get' }),
 }
 
 // 销售

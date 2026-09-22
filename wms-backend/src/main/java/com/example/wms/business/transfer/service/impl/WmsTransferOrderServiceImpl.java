@@ -32,7 +32,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -412,5 +414,29 @@ public class WmsTransferOrderServiceImpl extends ServiceImpl<WmsTransferOrderMap
         logEntity.setOperateTime(LocalDateTime.now());
         logEntity.setRemark(remark);
         statusLogMapper.insert(logEntity);
+    }
+
+    private static final String TRANSFER_NO_PREFIX = "DB";
+    private static final DateTimeFormatter NO_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final int NO_SEQ_LEN = 3;
+
+    @Override
+    public String generateTransferNo() {
+        String today = LocalDate.now().format(NO_DATE_FMT);
+        String prefix = TRANSFER_NO_PREFIX + today;
+        WmsTransferOrder last = this.lambdaQuery()
+                .likeRight(WmsTransferOrder::getTransferNo, prefix)
+                .orderByDesc(WmsTransferOrder::getTransferNo)
+                .last("LIMIT 1")
+                .one();
+        int nextSeq = 1;
+        if (last != null && StringUtils.hasText(last.getTransferNo())) {
+            String no = last.getTransferNo();
+            String tail = no.length() > prefix.length() ? no.substring(prefix.length()) : "";
+            if (tail.matches("\\d+")) {
+                nextSeq = Integer.parseInt(tail) + 1;
+            }
+        }
+        return prefix + String.format("%0" + NO_SEQ_LEN + "d", nextSeq);
     }
 }

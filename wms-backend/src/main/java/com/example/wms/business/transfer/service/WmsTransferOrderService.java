@@ -106,4 +106,11 @@ public interface WmsTransferOrderService extends IService<WmsTransferOrder> {
      * @return 导出文件字节数组
      */
     byte[] export(TransferPageReq req);
+
+    /**
+     * 生成下一个调拨单号：DB + yyyyMMdd + 3位序号（001 起步）
+     *
+     * @return 调拨单号，如 DB20260922001
+     */
+    String generateTransferNo();
 }

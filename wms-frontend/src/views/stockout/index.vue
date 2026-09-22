@@ -93,7 +93,7 @@
         <el-row :gutter="16">
           <el-col :span="8">
             <el-form-item label="出库单号" prop="stockOutNo">
-              <el-input v-model="form.stockOutNo" placeholder="请输入出库单号" />
+              <el-input v-model="form.stockOutNo" placeholder="自动生成" :disabled="isEdit" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -462,6 +462,12 @@ function handleAdd() {
   isEdit.value = false
   formTitle.value = '新增出库单'
   Object.assign(form, initForm())
+  // 预生成出库单号
+  stockOutApi.generateNo().then((res: any) => {
+    if (res?.data) form.stockOutNo = res.data
+  }).catch(() => {
+    // 接口失败也不阻塞，用户可以手动填
+  })
   formVisible.value = true
 }
 

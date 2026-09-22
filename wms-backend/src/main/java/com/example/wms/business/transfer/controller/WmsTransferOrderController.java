@@ -147,4 +147,11 @@ public class WmsTransferOrderController {
         response.setHeader("Content-Disposition", "attachment; filename=" + fileName);
         response.getOutputStream().write(data);
     }
+
+    @Operation(summary = "生成下一个调拨单号（DB + yyyyMMdd + 3位序号）")
+    @PreAuthorize(hasAuthority = "wms:transfer:add")
+    @GetMapping("/generate-no")
+    public R<String> generateNo() {
+        return R.ok(transferOrderService.generateTransferNo());
+    }
 }

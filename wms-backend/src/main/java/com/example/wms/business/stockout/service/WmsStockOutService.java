@@ -127,4 +127,11 @@ public interface WmsStockOutService extends IService<WmsStockOut> {
      * @param response HTTP响应
      */
     void exportStockOutItems(StockOutPageReq req, HttpServletResponse response);
+
+    /**
+     * 生成下一个出库单号：CK + yyyyMMdd + 3位序号（001 起步）
+     *
+     * @return 出库单号，如 CK20260922001
+     */
+    String generateStockOutNo();
 }

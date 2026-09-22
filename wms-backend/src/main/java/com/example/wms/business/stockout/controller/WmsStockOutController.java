@@ -149,10 +149,17 @@ public class WmsStockOutController {
         return R.ok();
     }
 
-    @PreAuthorize(hasAuthority = "wms:stock-out:export")
+    @PreAuthorize(hasAuthority = "wms:stock-out:list")
     @Operation(summary = "导出出库明细（只导出已审核）")
     @GetMapping("/export")
     public void export(StockOutPageReq req, jakarta.servlet.http.HttpServletResponse response) {
         stockOutService.exportStockOutItems(req, response);
+    }
+
+    @Operation(summary = "生成下一个出库单号（CK + yyyyMMdd + 3位序号）")
+    @PreAuthorize(hasAuthority = "wms:stock-out:add")
+    @GetMapping("/generate-no")
+    public R<String> generateNo() {
+        return R.ok(stockOutService.generateStockOutNo());
     }
 }
