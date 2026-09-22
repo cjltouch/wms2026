@@ -192,19 +192,41 @@ public class InventoryLogServiceImpl extends ServiceImpl<WmsInventoryLogMapper, 
             log.setItemId(log.getBillItemId());
             log.setUnitPrice(log.getCostPrice());
             log.setAmountChange(log.getChangeAmount());
-            int qty = log.getChangeQty() == null ? 0 : log.getChangeQty();
-            if (qty > 0) {
-                log.setDirection(1);
-                log.setDirectionName("入库");
-                log.setQtyChange(qty);
-            } else if (qty < 0) {
-                log.setDirection(-1);
-                log.setDirectionName("出库");
-                log.setQtyChange(-qty);
+            // 方向推导：以 DB 的 changeType 列（1入 -1出 0调整）为准。
+            // 所有 Handler 写流水时 changeQty 都是正数（数量本身），方向完全由 changeType 区分；
+            // 旧逻辑只看 changeQty 正负导致 TRANSFER_OUT 等出库方向被强制覆盖为入库。
+            Integer ct = log.getChangeType();
+            int qtyAbs = Math.abs(log.getChangeQty() == null ? 0 : log.getChangeQty());
+            if (ct != null) {
+                if (ct > 0) {
+                    log.setDirection(1);
+                    log.setDirectionName("入库");
+                    log.setQtyChange(qtyAbs);
+                } else if (ct < 0) {
+                    log.setDirection(-1);
+                    log.setDirectionName("出库");
+                    log.setQtyChange(qtyAbs);
+                } else {
+                    log.setDirection(0);
+                    log.setDirectionName("调整");
+                    log.setQtyChange(qtyAbs);
+                }
             } else {
-                log.setDirection(0);
-                log.setDirectionName("调整");
-                log.setQtyChange(0);
+                // 兜底：极少数历史数据可能没 changeType，按 changeQty 正负推
+                int qty = log.getChangeQty() == null ? 0 : log.getChangeQty();
+                if (qty > 0) {
+                    log.setDirection(1);
+                    log.setDirectionName("入库");
+                    log.setQtyChange(qty);
+                } else if (qty < 0) {
+                    log.setDirection(-1);
+                    log.setDirectionName("出库");
+                    log.setQtyChange(-qty);
+                } else {
+                    log.setDirection(0);
+                    log.setDirectionName("调整");
+                    log.setQtyChange(0);
+                }
             }
             log.setBillTypeName(BILL_TYPE_NAME.getOrDefault(log.getBillType(), (log.getBillType() == null ? "-" : log.getBillType())));
         }

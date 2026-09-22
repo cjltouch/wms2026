@@ -71,6 +71,11 @@ export const locationApi = {
   ...createCrudApi('/api/wms/location'),
   batchGenerate: (data: any) => request({ url: '/api/wms/location/batch-generate', method: 'post', data }),
 }
+// 用品登记（办公用品/消耗品出入库记录）
+export const officeRecordApi = {
+  ...createCrudApi('/api/wms/office-record'),
+  suggestName: (keyword: string) => request({ url: '/api/wms/office-record/suggest-name', method: 'get', params: { keyword } }),
+}
 
 // 采购
 export const purchaseApi = {

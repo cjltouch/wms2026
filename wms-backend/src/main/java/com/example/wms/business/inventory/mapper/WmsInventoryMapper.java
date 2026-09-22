@@ -22,8 +22,8 @@ public interface WmsInventoryMapper extends BaseMapper<WmsInventory> {
     @Update("UPDATE wms_inventory SET quantity = quantity - #{qty}, available_qty = available_qty - #{qty}, " +
             "last_out_time = #{now}, version = version + 1 " +
             "WHERE warehouse_id = #{whId} AND sku_id = #{skuId} " +
-            "AND (location_id = #{locId} OR (location_id IS NULL AND #{locId} IS NULL)) " +
-            "AND (batch_no = #{batchNo} OR (COALESCE(batch_no,'') = '' AND COALESCE(#{batchNo},'') = '')) " +
+            "AND (location_id = #{locId} OR (#{locId} IS NULL AND location_id IS NULL)) " +
+            "AND ((batch_no = #{batchNo}) OR (#{batchNo} IS NULL AND batch_no IS NULL)) " +
             "AND available_qty >= #{qty} AND deleted = 0")
     int deductStock(@Param("whId") Long whId, @Param("skuId") Long skuId,
                     @Param("locId") Long locId, @Param("batchNo") String batchNo,
@@ -47,20 +47,20 @@ public interface WmsInventoryMapper extends BaseMapper<WmsInventory> {
     @Update("UPDATE wms_inventory SET locked_qty = locked_qty + #{qty}, available_qty = available_qty - #{qty}, " +
             "version = version + 1 " +
             "WHERE warehouse_id = #{whId} AND sku_id = #{skuId} " +
-            "AND (location_id = #{locId} OR (location_id IS NULL AND #{locId} IS NULL)) " +
-            "AND (batch_no = #{batchNo} OR (COALESCE(batch_no,'') = '' AND COALESCE(#{batchNo},'') = '')) " +
+            "AND (location_id = #{locId} OR (#{locId} IS NULL AND location_id IS NULL)) " +
+            "AND ((batch_no = #{batchNo}) OR (#{batchNo} IS NULL AND batch_no IS NULL)) " +
             "AND available_qty >= #{qty} AND deleted = 0")
     int lockStock(@Param("whId") Long whId, @Param("skuId") Long skuId,
                   @Param("locId") Long locId, @Param("batchNo") String batchNo,
                   @Param("qty") Integer qty);
 
-    /** 出库确认（锁定转出库）：quantity 与 locked_qty 同减，available_qty 锁定时已扣不再变动 */
+    /** 出库确认（锁定转出库）：quantity 与 locked_qty 同减，available_qty 锁定时已扣不再变动；total_amount 用新值计算 */
     @Update("UPDATE wms_inventory SET quantity = quantity - #{qty}, locked_qty = locked_qty - #{qty}, " +
-            "last_out_time = #{now}, version = version + 1 ," +
-            "total_amount = cost_price * quantity " +
+            "last_out_time = #{now}, version = version + 1, " +
+            "total_amount = cost_price * (quantity - #{qty}) " +
             "WHERE warehouse_id = #{whId} AND sku_id = #{skuId} " +
-            "AND (location_id = #{locId} OR (location_id IS NULL AND #{locId} IS NULL)) " +
-            "AND (batch_no = #{batchNo} OR (COALESCE(batch_no,'') = '' AND COALESCE(#{batchNo},'') = '')) " +
+            "AND (location_id = #{locId} OR (#{locId} IS NULL AND location_id IS NULL)) " +
+            "AND ((batch_no = #{batchNo}) OR (#{batchNo} IS NULL AND batch_no IS NULL)) " +
             "AND locked_qty >= #{qty} AND deleted = 0")
     int confirmLockStock(@Param("whId") Long whId, @Param("skuId") Long skuId,
                          @Param("locId") Long locId, @Param("batchNo") String batchNo,
@@ -70,8 +70,8 @@ public interface WmsInventoryMapper extends BaseMapper<WmsInventory> {
     @Update("UPDATE wms_inventory SET locked_qty = locked_qty - #{qty}, available_qty = available_qty + #{qty}, " +
             "version = version + 1 " +
             "WHERE warehouse_id = #{whId} AND sku_id = #{skuId} " +
-            "AND (location_id = #{locId} OR (location_id IS NULL AND #{locId} IS NULL)) " +
-            "AND (batch_no = #{batchNo} OR (COALESCE(batch_no,'') = '' AND COALESCE(#{batchNo},'') = '')) " +
+            "AND (location_id = #{locId} OR (#{locId} IS NULL AND location_id IS NULL)) " +
+            "AND ((batch_no = #{batchNo}) OR (#{batchNo} IS NULL AND batch_no IS NULL)) " +
             "AND locked_qty >= #{qty} AND deleted = 0")
     int unlockStock(@Param("whId") Long whId, @Param("skuId") Long skuId,
                     @Param("locId") Long locId, @Param("batchNo") String batchNo,
@@ -81,8 +81,8 @@ public interface WmsInventoryMapper extends BaseMapper<WmsInventory> {
     @Update("UPDATE wms_inventory SET quantity = quantity + #{qty}, locked_qty = locked_qty + #{qty}, " +
             "version = version + 1 " +
             "WHERE warehouse_id = #{whId} AND sku_id = #{skuId} " +
-            "AND (location_id = #{locId} OR (location_id IS NULL AND #{locId} IS NULL)) " +
-            "AND (batch_no = #{batchNo} OR (COALESCE(batch_no,'') = '' AND COALESCE(#{batchNo},'') = '')) " +
+            "AND (location_id = #{locId} OR (#{locId} IS NULL AND location_id IS NULL)) " +
+            "AND ((batch_no = #{batchNo}) OR (#{batchNo} IS NULL AND batch_no IS NULL)) " +
             "AND deleted = 0")
     int restoreLockedStock(@Param("whId") Long whId, @Param("skuId") Long skuId,
                            @Param("locId") Long locId, @Param("batchNo") String batchNo,

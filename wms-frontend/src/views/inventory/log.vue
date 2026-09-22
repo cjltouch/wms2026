@@ -5,6 +5,11 @@
       <el-form-item label="单据号">
         <el-input v-model="search.billNo" placeholder="请输入单据号" clearable style="width: 180px" @keyup.enter="handleSearch" />
       </el-form-item>
+      <el-form-item label="仓库">
+        <el-select v-model="search.warehouseId" placeholder="全部仓库" clearable style="width: 160px">
+          <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" />
+        </el-select>
+      </el-form-item>
       <el-form-item label="单据类型">
         <el-select v-model="search.billType" placeholder="全部类型" clearable style="width: 160px">
           <el-option v-for="o in billTypeOptions" :key="o.value" :label="o.label" :value="o.value" />
@@ -36,6 +41,11 @@
       <el-table-column label="单据类型" width="110" align="center">
         <template #default="{ row }">
           <el-tag size="small">{{ billTypeText(row.billType) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="仓库" width="120" align="center">
+        <template #default="{ row }">
+          <el-tag type="info" effect="plain" size="small">{{ row.warehouseName || '-' }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="skuCode" label="SKU编码" min-width="130" show-overflow-tooltip />
@@ -90,7 +100,7 @@
 defineOptions({ name: 'InventoryLog' })
 import { ref, reactive, onMounted } from 'vue'
 import { Search, Refresh } from '@element-plus/icons-vue'
-import { inventoryApi } from '@/api'
+import { inventoryApi, warehouseApi } from '@/api'
 
 const billTypeOptions = [
   { value: 'STOCK_IN', label: '入库单' },
@@ -123,9 +133,19 @@ const loading = ref(false)
 const tableData = ref<any[]>([])
 const total = ref(0)
 
+// 仓库下拉选项
+const warehouseOptions = ref<any[]>([])
+async function loadWarehouses() {
+  try {
+    const res: any = await warehouseApi.page({ pageNum: 1, pageSize: 1000 })
+    warehouseOptions.value = res.data?.rows || res.data?.records || []
+  } catch (e) { /* handled */ }
+}
+
 const dateRange = ref<[string, string] | []>([])
 const search = reactive({
   billNo: '',
+  warehouseId: undefined as undefined | string,
   billType: '',
   skuCode: '',
   startDate: '',
@@ -160,6 +180,7 @@ function handleSearch() {
 
 function resetSearch() {
   search.billNo = ''
+  search.warehouseId = undefined
   search.billType = ''
   search.skuCode = ''
   dateRange.value = []
@@ -170,6 +191,7 @@ function resetSearch() {
 }
 
 onMounted(() => {
+  loadWarehouses()
   loadData()
 })
 </script>

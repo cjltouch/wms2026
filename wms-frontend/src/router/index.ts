@@ -216,6 +216,19 @@ export const constantRoutes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/office',
+    component: Layout,
+    meta: { title: '用品管理', icon: 'Collection' },
+    children: [
+      {
+        path: 'record',
+        name: 'OfficeRecord',
+        component: () => import('@/views/office/index.vue'),
+        meta: { title: '用品登记' }
+      }
+    ]
+  },
+  {
     path: '/system',
     component: Layout,
     meta: { title: '系统管理', icon: 'Setting' },

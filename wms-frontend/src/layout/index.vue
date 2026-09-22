@@ -338,11 +338,14 @@ function resolveMenuPath(parentPath: string, childPath: string): string {
 }
 
 .sidebar {
+  display: flex;
+  flex-direction: column;
   background-color: #304156;
   transition: width 0.3s;
   overflow: hidden;
 
   .logo {
+    flex-shrink: 0;
     height: 60px;
     display: flex;
     align-items: center;
@@ -356,6 +359,12 @@ function resolveMenuPath(parentPath: string, childPath: string): string {
       font-weight: 600;
       white-space: nowrap;
     }
+  }
+
+  // 菜单滚动区：约束在 logo 以下的剩余高度内，菜单过多时可滚动
+  :deep(.el-scrollbar) {
+    flex: 1;
+    min-height: 0;
   }
 }
 

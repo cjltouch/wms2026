@@ -466,10 +466,10 @@ public class WmsStockOutServiceImpl extends ServiceImpl<WmsStockOutMapper, WmsSt
     }
 
     /**
-     * 锁定库存：按明细将可用量转锁定量，可用不足时抛异常回滚。
-     * 锁定是预占动作，不产生库存流水。
+     * 锁定库存：按明细将可用量转锁定量，可用不足时抛异常回滚，并记录锁定流水。
      */
     private void lockItems(WmsStockOut order, List<WmsStockOutItem> items) {
+        LocalDateTime now = LocalDateTime.now();
         for (WmsStockOutItem item : items) {
             Integer qty = item.getQty() != null ? item.getQty() : item.getExpectedQty();
             if (qty == null || qty <= 0) {
@@ -479,16 +479,20 @@ public class WmsStockOutServiceImpl extends ServiceImpl<WmsStockOutMapper, WmsSt
             if (inv == null || (inv.getAvailableQty() != null && inv.getAvailableQty() < qty)) {
                 throw new BizException("库存不足或库存记录不存在，SKU[" + item.getSkuCode() + "]无法锁定");
             }
+            int beforeLocked = inv.getLockedQty() != null ? inv.getLockedQty() : 0;
+            int beforeQty = inv.getQuantity() != null ? inv.getQuantity() : 0;
             int rows = inventoryMapper.lockStock(order.getWarehouseId(), item.getSkuId(),
                     inv.getLocationId(), inv.getBatchNo(), qty);
             if (rows == 0) {
                 throw new BizException("库存不足或库存记录不存在，SKU[" + item.getSkuCode() + "]无法锁定");
             }
-            // 将实际锁定的库存行库位/批次回写明细，确保后续确认/解锁/回补定位到同一行
             item.setLocationId(inv.getLocationId());
             item.setBatchNo(inv.getBatchNo());
             item.setLocationCode(inv.getLocationCode());
             itemMapper.updateById(item);
+            // 写锁定流水（quantity 不变，locked_qty 增加 qty）
+            insertOutLogWithLocked(order, item, qty, beforeQty, beforeLocked, now,
+                    "出库单 " + order.getStockOutNo() + " 锁定预占");
         }
     }
 
@@ -504,18 +508,20 @@ public class WmsStockOutServiceImpl extends ServiceImpl<WmsStockOutMapper, WmsSt
             }
             WmsInventory inv = findInventory(order.getWarehouseId(), item);
             int beforeQty = inv != null && inv.getQuantity() != null ? inv.getQuantity() : 0;
+            int beforeLocked = inv != null && inv.getLockedQty() != null ? inv.getLockedQty() : 0;
             int rows = inventoryMapper.confirmLockStock(order.getWarehouseId(), item.getSkuId(),
                     inv != null ? inv.getLocationId() : item.getLocationId(),
                     inv != null ? inv.getBatchNo() : item.getBatchNo(), qty, now);
             if (rows == 0) {
                 throw new BizException("锁定库存异常，SKU[" + item.getSkuCode() + "]无法出库");
             }
-            insertOutLog(order, item, qty, beforeQty, now, "出库确认扣减");
+            insertOutLogWithLocked(order, item, qty, beforeQty, beforeLocked, now, "出库确认扣减");
         }
     }
 
-    /** 解锁：锁定量释放回可用量（作废时调用），不产生库存流水 */
+    /** 解锁：锁定量释放回可用量（作废时调用），记录解锁流水 */
     private void unlockItems(WmsStockOut order, List<WmsStockOutItem> items) {
+        LocalDateTime now = LocalDateTime.now();
         for (WmsStockOutItem item : items) {
             Integer qty = item.getQty() != null ? item.getQty() : item.getExpectedQty();
             if (qty == null || qty <= 0) {
@@ -526,12 +532,18 @@ public class WmsStockOutServiceImpl extends ServiceImpl<WmsStockOutMapper, WmsSt
                 log.warn("出库单{}作废解锁未匹配到库存行，SKU[{}]", order.getStockOutNo(), item.getSkuCode());
                 continue;
             }
+            int beforeLocked = inv.getLockedQty() != null ? inv.getLockedQty() : 0;
+            int beforeQty = inv.getQuantity() != null ? inv.getQuantity() : 0;
             int rows = inventoryMapper.unlockStock(order.getWarehouseId(), item.getSkuId(),
                     inv.getLocationId(), inv.getBatchNo(), qty);
             if (rows == 0) {
                 log.warn("出库单{}作废解锁未命中锁定量，SKU[{}] 位置[{}]/批次[{}]",
                         order.getStockOutNo(), item.getSkuCode(), inv.getLocationId(), inv.getBatchNo());
+                continue;
             }
+            // 解锁流水：quantity 不变，locked_qty 减少 qty
+            insertOutLogWithLocked(order, item, qty, beforeQty, beforeLocked, now,
+                    "出库单 " + order.getStockOutNo() + " 作废解锁");
         }
     }
 
@@ -549,6 +561,7 @@ public class WmsStockOutServiceImpl extends ServiceImpl<WmsStockOutMapper, WmsSt
                 continue;
             }
             int beforeQty = inv.getQuantity() != null ? inv.getQuantity() : 0;
+            int beforeLocked = inv.getLockedQty() != null ? inv.getLockedQty() : 0;
             int rows = inventoryMapper.restoreLockedStock(order.getWarehouseId(), item.getSkuId(),
                     inv.getLocationId(), inv.getBatchNo(), qty);
             if (rows == 0) {
@@ -556,7 +569,7 @@ public class WmsStockOutServiceImpl extends ServiceImpl<WmsStockOutMapper, WmsSt
                         order.getStockOutNo(), item.getSkuCode(), inv.getLocationId(), inv.getBatchNo());
                 continue;
             }
-            insertOutLog(order, item, qty, beforeQty, now, "出库反审核回补");
+            insertOutLogWithLocked(order, item, qty, beforeQty, beforeLocked, now, "出库反审核回补");
         }
     }
 
@@ -589,8 +602,42 @@ public class WmsStockOutServiceImpl extends ServiceImpl<WmsStockOutMapper, WmsSt
         return null;
     }
 
-    private void insertOutLog(WmsStockOut order, WmsStockOutItem item, int qty,
-                              int beforeQty, LocalDateTime now, String remark) {
+    /**
+     * 写出库相关库存流水，自动根据 remark 判断业务场景填充 direction/qtyChange/changeLocked：
+     *   - "锁定预占"       → direction=0,  qtyChange=0,     changeLocked=+qty  （quantity 不变，锁定量增）
+     *   - "出库确认扣减"   → direction=-1, qtyChange=-qty,  changeLocked=-qty  （锁定转出库）
+     *   - "作废解锁"       → direction=0,  qtyChange=0,     changeLocked=-qty  （锁定量释放回可用）
+     *   - "出库反审核回补" → direction=1,  qtyChange=+qty,  changeLocked=+qty  （正向回补）
+     */
+    private void insertOutLogWithLocked(WmsStockOut order, WmsStockOutItem item, int qty,
+                                        int beforeQty, int beforeLocked, LocalDateTime now, String remark) {
+        String type = remark;
+        boolean isLock    = type.contains("锁定预占");
+        boolean isConfirm  = type.contains("出库确认扣减");
+        boolean isUnlock   = type.contains("作废解锁");
+        boolean isRestore  = type.contains("出库反审核回补");
+
+        int direction;
+        int qtyChange;
+        int changeLocked;
+        if (isConfirm) {
+            direction = -1;
+            qtyChange = -qty;
+            changeLocked = -qty;
+        } else if (isRestore) {
+            direction = 1;
+            qtyChange = qty;
+            changeLocked = qty;
+        } else {
+            // lock / unlock 都是 quantity 不变，只有锁定量变化
+            direction = 0;
+            qtyChange = 0;
+            changeLocked = isLock ? qty : -qty;
+        }
+
+        int afterQty = beforeQty + qtyChange;
+        int afterLocked = beforeLocked + changeLocked;
+
         WmsInventoryLog logRow = new WmsInventoryLog();
         logRow.setLogId(SnowflakeId.getInstance().nextId());
         logRow.setBillId(order.getStockOutId());
@@ -600,18 +647,22 @@ public class WmsStockOutServiceImpl extends ServiceImpl<WmsStockOutMapper, WmsSt
         logRow.setSkuId(item.getSkuId());
         logRow.setLocationId(item.getLocationId());
         logRow.setBatchNo(item.getBatchNo());
-        logRow.setDirection(-1);
-        logRow.setQtyChange(-qty);
+        logRow.setDirection(direction);
+        logRow.setQtyChange(qtyChange);
+        logRow.setChangeType(direction);
+        logRow.setBeforeQty(beforeQty);
+        logRow.setAfterQty(afterQty);
+        logRow.setBeforeLocked(beforeLocked);
+        logRow.setChangeLocked(changeLocked);
+        logRow.setAfterLocked(afterLocked);
         logRow.setUnitPrice(item.getCostPrice());
         logRow.setAmountChange((item.getCostPrice() != null ? item.getCostPrice() : BigDecimal.ZERO)
-                .multiply(BigDecimal.valueOf(beforeQty - qty)));
+                .multiply(BigDecimal.valueOf(qtyChange)));
         logRow.setOperateBy(AuthContextHolder.getUserId());
+        logRow.setOperateName(AuthContextHolder.getNickName());
         logRow.setOperateTime(now);
-        logRow.setBeforeQty(beforeQty);
-        logRow.setAfterQty(beforeQty - qty);
         logRow.setRemark(remark);
         logRow.setInnerCode(item.getInnerCode());
-        logRow.setOperateName(AuthContextHolder.getNickName());
         inventoryLogMapper.insert(logRow);
     }
 
