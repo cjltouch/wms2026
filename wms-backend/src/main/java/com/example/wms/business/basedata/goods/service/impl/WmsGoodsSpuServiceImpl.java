@@ -189,10 +189,8 @@ public class WmsGoodsSpuServiceImpl extends ServiceImpl<WmsGoodsSpuMapper, WmsGo
         exist.setStatus(req.getStatus());
         this.updateById(exist);
 
-        wmsGoodsSkuMapper.physicalDeleteBySpuId(req.getSpuId());
-
-
-        saveSkuList(req.getSpuId(), req.getSpuName(), req.getSkuList());
+        // 增量合并 SKU：保留已有 SKU 的 ID，避免全删全建导致库存/单据的 sku_id 引用悬空
+        mergeSkuList(req.getSpuId(), req.getSpuName(), req.getSkuList());
         return req.getSpuId();
     }
 
@@ -255,27 +253,106 @@ public class WmsGoodsSpuServiceImpl extends ServiceImpl<WmsGoodsSpuMapper, WmsGo
         List<WmsGoodsSku> skus = new ArrayList<>();
         for (SkuSaveReq req : skuList) {
             WmsGoodsSku sku = new WmsGoodsSku();
-            sku.setSpuId(spuId);
-            sku.setSupplierId(req.getSupplierId());
-            // 唯一索引列（sku_code/barcode）空字符串会判重，统一存NULL
-            sku.setSkuCode(StringUtils.hasText(req.getSkuCode()) ? req.getSkuCode().trim() : null);
-            sku.setInnerCode(StringUtils.hasText(req.getInnerCode()) ? req.getInnerCode().trim() : null);
-            sku.setSkuName(spuName);
-            sku.setBarcode(StringUtils.hasText(req.getBarcode()) ? req.getBarcode().trim() : null);
-            sku.setSpecText(StringUtils.hasText(req.getSpecText()) ? req.getSpecText() : null);
-            sku.setWeightG(req.getWeightG());
-            sku.setVolumeMl(req.getVolumeMl());
-            sku.setColor(StringUtils.hasText(req.getColor()) ? req.getColor() : null);
-            sku.setBatchFlag(req.getBatchFlag() == null ? 0 : req.getBatchFlag());
-            sku.setExpireFlag(req.getExpireFlag() == null ? 0 : req.getExpireFlag());
-            sku.setSnFlag(req.getSnFlag() == null ? 0 : req.getSnFlag());
-            sku.setShelfLifeDays(req.getShelfLifeDays());
-            sku.setDefaultCost(req.getDefaultCost());
-            sku.setDefaultSale(req.getDefaultSale());
-            sku.setStatus(req.getStatus() == null ? "0" : req.getStatus());
+            fillSkuEntity(sku, spuId, spuName, req);
             skus.add(sku);
         }
         wmsGoodsSkuService.saveBatch(skus);
+    }
+
+    /**
+     * 编辑 SPU 时增量合并 SKU 列表
+     * <ul>
+     *   <li>请求行带 skuId 且 DB 存在：UPDATE，ID 保持不变</li>
+     *   <li>请求行无 skuId：INSERT 新增</li>
+     *   <li>DB 存在但请求列表中已移除：校验无库存/单据引用后逻辑删除</li>
+     * </ul>
+     *
+     * @param spuId   SPU ID
+     * @param spuName SPU 名称（同步冗余到 sku_name）
+     * @param reqList 前端提交的 SKU 列表
+     */
+    private void mergeSkuList(Long spuId, String spuName, List<SkuSaveReq> reqList) {
+        List<WmsGoodsSku> existSkus = wmsGoodsSkuService.lambdaQuery()
+                .eq(WmsGoodsSku::getSpuId, spuId)
+                .list();
+        Map<Long, WmsGoodsSku> existMap = existSkus.stream()
+                .collect(Collectors.toMap(WmsGoodsSku::getSkuId, s -> s));
+
+        Set<Long> keptIds = new HashSet<>();
+        List<WmsGoodsSku> toUpdate = new ArrayList<>();
+        List<WmsGoodsSku> toInsert = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(reqList)) {
+            for (SkuSaveReq req : reqList) {
+                if (req.getSkuId() != null) {
+                    WmsGoodsSku existSku = existMap.get(req.getSkuId());
+                    if (existSku == null) {
+                        throw new BizException("SKU不存在或已被移除，请勿手工修改ID："
+                                + (StringUtils.hasText(req.getSkuCode()) ? req.getSkuCode() : req.getSkuId()));
+                    }
+                    fillSkuEntity(existSku, spuId, spuName, req);
+                    toUpdate.add(existSku);
+                    keptIds.add(req.getSkuId());
+                } else {
+                    WmsGoodsSku sku = new WmsGoodsSku();
+                    fillSkuEntity(sku, spuId, spuName, req);
+                    toInsert.add(sku);
+                }
+            }
+        }
+
+        // 列表中被移除的 SKU：存在库存或业务单据引用时禁止删除
+        List<Long> deleteIds = existSkus.stream()
+                .map(WmsGoodsSku::getSkuId)
+                .filter(id -> !keptIds.contains(id))
+                .toList();
+        for (Long deleteId : deleteIds) {
+            long refs = wmsGoodsSkuMapper.countReferences(deleteId);
+            if (refs > 0) {
+                WmsGoodsSku refSku = existMap.get(deleteId);
+                throw new BizException("SKU【"
+                        + (StringUtils.hasText(refSku.getSkuCode()) ? refSku.getSkuCode() : deleteId)
+                        + "】已存在库存或出入库等业务单据，无法删除");
+            }
+        }
+
+        if (!deleteIds.isEmpty()) {
+            wmsGoodsSkuService.removeByIds(deleteIds);
+        }
+        if (!toUpdate.isEmpty()) {
+            wmsGoodsSkuService.updateBatchById(toUpdate);
+        }
+        if (!toInsert.isEmpty()) {
+            wmsGoodsSkuService.saveBatch(toInsert);
+        }
+    }
+
+    /**
+     * 将前端 SKU 保存参数填充到 SKU 实体（新增/更新共用）
+     *
+     * @param sku     SKU 实体
+     * @param spuId   SPU ID
+     * @param spuName SPU 名称
+     * @param req     SKU 保存参数
+     */
+    private void fillSkuEntity(WmsGoodsSku sku, Long spuId, String spuName, SkuSaveReq req) {
+        sku.setSpuId(spuId);
+        sku.setSupplierId(req.getSupplierId());
+        // 唯一索引列（sku_code/barcode）空字符串会判重，统一存NULL
+        sku.setSkuCode(StringUtils.hasText(req.getSkuCode()) ? req.getSkuCode().trim() : null);
+        sku.setInnerCode(StringUtils.hasText(req.getInnerCode()) ? req.getInnerCode().trim() : null);
+        sku.setSkuName(spuName);
+        sku.setBarcode(StringUtils.hasText(req.getBarcode()) ? req.getBarcode().trim() : null);
+        sku.setSpecText(StringUtils.hasText(req.getSpecText()) ? req.getSpecText() : null);
+        sku.setWeightG(req.getWeightG());
+        sku.setVolumeMl(req.getVolumeMl());
+        sku.setColor(StringUtils.hasText(req.getColor()) ? req.getColor() : null);
+        sku.setBatchFlag(req.getBatchFlag() == null ? 0 : req.getBatchFlag());
+        sku.setExpireFlag(req.getExpireFlag() == null ? 0 : req.getExpireFlag());
+        sku.setSnFlag(req.getSnFlag() == null ? 0 : req.getSnFlag());
+        sku.setShelfLifeDays(req.getShelfLifeDays());
+        sku.setDefaultCost(req.getDefaultCost());
+        sku.setDefaultSale(req.getDefaultSale());
+        sku.setStatus(req.getStatus() == null ? "0" : req.getStatus());
     }
 
     @Override

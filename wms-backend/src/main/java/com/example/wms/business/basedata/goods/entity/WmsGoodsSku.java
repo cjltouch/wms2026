@@ -1,6 +1,7 @@
 package com.example.wms.business.basedata.goods.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -32,25 +33,30 @@ public class WmsGoodsSku implements Serializable {
     private Long spuId;
 
     /** 主供应商ID（采购下单时按供应商过滤可选商品） */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long supplierId;
 
     private String skuCode;
 
     /** 内部编码 */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String innerCode;
 
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String barcode;
 
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String specText;
 
     /** 颜色 */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String color;
 
-    @TableField("weight")
+    @TableField(value = "weight", updateStrategy = FieldStrategy.IGNORED)
     private Integer weightG;
 
-    @TableField("volume")
+    @TableField(value = "volume", updateStrategy = FieldStrategy.IGNORED)
     private Integer volumeMl;
 
     @TableField(exist = false)
@@ -65,10 +71,10 @@ public class WmsGoodsSku implements Serializable {
     @TableField(exist = false)
     private Integer shelfLifeDays;
 
-    @TableField("cost_price")
+    @TableField(value = "cost_price", updateStrategy = FieldStrategy.IGNORED)
     private BigDecimal defaultCost;
 
-    @TableField("sale_price")
+    @TableField(value = "sale_price", updateStrategy = FieldStrategy.IGNORED)
     private BigDecimal defaultSale;
 
     private String status;
