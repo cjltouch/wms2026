@@ -1,7 +1,12 @@
 <template>
   <div class="m-detail">
-    <!-- ===== 沉浸式头部 ===== -->
+    <!-- ===== 沉浸式头部（状态色渐变） ===== -->
     <div class="hero" :class="heroStatusClass">
+      <!-- 多层渐变光斑 -->
+      <div class="hero-orb orb-a"></div>
+      <div class="hero-orb orb-b"></div>
+      <div class="hero-orb orb-c"></div>
+
       <!-- 状态栏占位 -->
       <div class="hero-status"></div>
 
@@ -22,7 +27,7 @@
 
       <!-- 头部摘要 -->
       <template v-else-if="order">
-        <!-- 状态 Pill + 单号 -->
+        <!-- 状态 Pill -->
         <div class="hero-status-row">
           <span class="status-pill">
             <van-icon :name="statusIcon" size="14" />
@@ -30,13 +35,13 @@
           </span>
         </div>
 
-        <!-- 金额大数字 -->
+        <!-- 金额大数字（渐变色文字 + 阴影） -->
         <div class="hero-amount" v-if="order.totalAmount">
-          <span class="amount-label">单据金额</span>
+          <span class="amount-label">{{ currentType.amountLabel }}</span>
           <span class="amount-num">￥{{ formatAmount(order.totalAmount) }}</span>
         </div>
 
-        <!-- 关键信息横排 -->
+        <!-- 关键信息横排（玻璃拟态） -->
         <div class="hero-meta">
           <div class="meta-item">
             <div class="meta-label">{{ partyLabel }}</div>
@@ -88,31 +93,35 @@
           :key="idx"
           class="item-card"
         >
-          <div class="item-top">
-            <span class="item-idx">#{{ idx + 1 }}</span>
-            <span class="item-name">{{ getItemName(item) }}</span>
-          </div>
-          <div class="item-grid">
-            <div class="grid-cell">
-              <div class="gk">SKU编码</div>
-              <div class="gv mono">{{ item.skuCode || '-' }}</div>
+          <!-- 左侧色条 -->
+          <div class="item-bar"></div>
+          <div class="item-content">
+            <div class="item-top">
+              <span class="item-idx">#{{ idx + 1 }}</span>
+              <span class="item-name">{{ getItemName(item) }}</span>
             </div>
-            <div class="grid-cell">
-              <div class="gk">规格</div>
-              <div class="gv">{{ item.specText || item.spec || '-' }}</div>
+            <div class="item-grid">
+              <div class="grid-cell">
+                <div class="gk">SKU编码</div>
+                <div class="gv mono">{{ item.skuCode || '-' }}</div>
+              </div>
+              <div class="grid-cell">
+                <div class="gk">规格</div>
+                <div class="gv">{{ item.specText || item.spec || '-' }}</div>
+              </div>
+              <div class="grid-cell">
+                <div class="gk">数量</div>
+                <div class="gv">{{ item.quantity || item.qty || 0 }}</div>
+              </div>
+              <div class="grid-cell">
+                <div class="gk">单价</div>
+                <div class="gv">￥{{ formatAmount(item.unitPrice || item.price) }}</div>
+              </div>
             </div>
-            <div class="grid-cell">
-              <div class="gk">数量</div>
-              <div class="gv">{{ item.quantity || item.qty || 0 }}</div>
+            <div class="item-total">
+              <span>金额小计</span>
+              <span class="item-subtotal">￥{{ formatAmount(item.subtotal || (item.quantity * item.unitPrice)) }}</span>
             </div>
-            <div class="grid-cell">
-              <div class="gk">单价</div>
-              <div class="gv">￥{{ formatAmount(item.unitPrice || item.price) }}</div>
-            </div>
-          </div>
-          <div class="item-total">
-            <span>金额小计</span>
-            <span class="item-subtotal">￥{{ formatAmount(item.subtotal || (item.quantity * item.unitPrice)) }}</span>
           </div>
         </div>
       </div>
@@ -404,7 +413,7 @@ function formatAmount(amount: number) {
 .m-detail {
   min-height: 100vh;
   background: #f4f5f9;
-  padding-bottom: 80px;
+  padding-bottom: 90px;
 }
 
 /* ===== 沉浸式头部 ===== */
@@ -412,6 +421,7 @@ function formatAmount(amount: number) {
   padding: 0 20px 70px;
   position: relative;
   color: #fff;
+  overflow: hidden;
 }
 
 /* 三种状态渐变 */
@@ -424,7 +434,39 @@ function formatAmount(amount: number) {
 }
 
 .hero-void {
-  background: linear-gradient(135deg, #666 0%, #999 100%);
+  background: linear-gradient(135deg, #8c8c8c 0%, #595959 100%);
+}
+
+/* 多层渐变光斑 */
+.hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(45px);
+  pointer-events: none;
+}
+
+.orb-a {
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.2);
+  top: -40px;
+  right: -30px;
+}
+
+.orb-b {
+  width: 160px;
+  height: 160px;
+  background: rgba(255, 255, 255, 0.15);
+  bottom: 60px;
+  left: -50px;
+}
+
+.orb-c {
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.12);
+  top: 35%;
+  right: 18%;
 }
 
 /* 底部波浪过渡 */
@@ -437,10 +479,13 @@ function formatAmount(amount: number) {
   height: 70px;
   background: #f4f5f9;
   border-radius: 35px 35px 0 0;
+  z-index: 3;
 }
 
 .hero-status {
   height: 44px;
+  position: relative;
+  z-index: 2;
 }
 
 .hero-bar {
@@ -448,33 +493,40 @@ function formatAmount(amount: number) {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 14px;
+  position: relative;
+  z-index: 2;
 }
 
 .circle-btn {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: #fff;
+  transition: transform 0.15s;
+}
+
+.circle-btn:active {
+  transform: scale(0.92);
 }
 
 .hero-type-tag {
   background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 16px;
-  padding: 6px 12px;
+  padding: 6px 14px;
 }
 
 .type-tag-text {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* 加载中 */
@@ -482,11 +534,15 @@ function formatAmount(amount: number) {
   display: flex;
   justify-content: center;
   padding: 40px 0;
+  position: relative;
+  z-index: 2;
 }
 
 /* 状态 Pill */
 .hero-status-row {
   margin-bottom: 16px;
+  position: relative;
+  z-index: 2;
 }
 
 .status-pill {
@@ -494,17 +550,19 @@ function formatAmount(amount: number) {
   align-items: center;
   gap: 6px;
   background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 13px;
-  font-weight: 500;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-/* 金额大数字 */
+/* 金额大数字（渐变色文字 + 阴影） */
 .hero-amount {
   margin-bottom: 18px;
+  position: relative;
+  z-index: 2;
 }
 
 .amount-label {
@@ -515,20 +573,29 @@ function formatAmount(amount: number) {
 }
 
 .amount-num {
-  font-size: 40px;
+  font-size: 42px;
   font-weight: 800;
   letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
 }
 
-/* 关键信息横排 */
+/* 关键信息横排（玻璃拟态） */
 .hero-meta {
   display: flex;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(6px);
-  border-radius: 12px;
-  padding: 12px 0;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  padding: 14px 0;
   margin-bottom: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
 }
 
 .meta-item {
@@ -540,12 +607,12 @@ function formatAmount(amount: number) {
 .meta-label {
   font-size: 12px;
   opacity: 0.75;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .meta-value {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   max-width: 90px;
   margin: 0 auto;
   white-space: nowrap;
@@ -555,7 +622,7 @@ function formatAmount(amount: number) {
 
 .meta-divider {
   width: 1px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* 单号 + 时间 */
@@ -564,27 +631,32 @@ function formatAmount(amount: number) {
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
-  opacity: 0.8;
+  opacity: 0.85;
+  position: relative;
+  z-index: 2;
 }
 
 .hero-bill-no {
   font-family: 'SF Mono', Menlo, Consolas, monospace;
   font-size: 12px;
-  background: rgba(255, 255, 255, 0.15);
-  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.18);
+  padding: 4px 12px;
   border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* ===== 内容区 ===== */
 .section {
   padding: 6px 0 0;
+  position: relative;
+  z-index: 4;
 }
 
 .section-title {
   padding: 14px 18px 8px;
-  font-size: 14px;
-  color: #666;
-  font-weight: 600;
+  font-size: 15px;
+  color: #1a1a2e;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -592,7 +664,7 @@ function formatAmount(amount: number) {
 
 .title-dot {
   width: 4px;
-  height: 14px;
+  height: 15px;
   border-radius: 2px;
   background: linear-gradient(180deg, #667eea, #764ba2);
 }
@@ -608,16 +680,16 @@ function formatAmount(amount: number) {
 .info-card {
   margin: 0 14px;
   background: #fff;
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 4px 18px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .info-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 13px 0;
+  padding: 14px 0;
   border-bottom: 1px solid #f7f7f7;
   font-size: 13px;
 }
@@ -627,28 +699,46 @@ function formatAmount(amount: number) {
 }
 
 .info-k {
-  color: #999;
+  color: #8c8c8c;
   flex-shrink: 0;
   margin-right: 16px;
 }
 
 .info-v {
-  color: #333;
+  color: #1a1a2e;
   text-align: right;
   word-break: break-all;
+  font-weight: 500;
 }
 
 .info-v.mono {
   color: #bbb;
 }
 
-/* 明细卡 */
+/* 明细卡（现代卡片样式：左色条 + 序号 + 商品名 + grid） */
 .item-card {
   margin: 0 14px 10px;
   background: #fff;
-  border-radius: 14px;
+  border-radius: 16px;
+  display: flex;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  transition: transform 0.15s;
+}
+
+.item-card:active {
+  transform: scale(0.99);
+}
+
+.item-bar {
+  width: 5px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+}
+
+.item-content {
+  flex: 1;
   padding: 14px 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 }
 
 .item-top {
@@ -659,12 +749,13 @@ function formatAmount(amount: number) {
 }
 
 .item-idx {
-  width: 26px;
-  height: 26px;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 8px;
   border-radius: 8px;
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: #fff;
-  font-size: 12px;
+  font-size: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -674,7 +765,7 @@ function formatAmount(amount: number) {
 
 .item-name {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   color: #1a1a2e;
   flex: 1;
   min-width: 0;
@@ -687,7 +778,7 @@ function formatAmount(amount: number) {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px 16px;
-  padding: 10px 0;
+  padding: 12px 0;
   border-top: 1px dashed #f0f0f0;
   border-bottom: 1px dashed #f0f0f0;
 }
@@ -697,34 +788,38 @@ function formatAmount(amount: number) {
 }
 
 .gk {
-  color: #bbb;
-  margin-bottom: 3px;
+  color: #bfbfbf;
+  margin-bottom: 4px;
 }
 
 .gv {
-  color: #333;
+  color: #1a1a2e;
   font-size: 13px;
+  font-weight: 500;
 }
 
 .mono {
   font-family: 'SF Mono', Menlo, Consolas, monospace;
   font-size: 12px;
-  color: #667eea;
+  color: #5a67d8;
 }
 
 .item-total {
-  margin-top: 10px;
+  margin-top: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 13px;
-  color: #999;
+  color: #8c8c8c;
 }
 
 .item-subtotal {
-  color: #ff4d4f;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ff4d4f, #ff7a45);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* ===== 底部操作栏 ===== */
@@ -736,24 +831,27 @@ function formatAmount(amount: number) {
   display: flex;
   gap: 12px;
   padding: 12px 16px calc(env(safe-area-inset-bottom) + 12px);
-  background: #fff;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.08);
   z-index: 30;
 }
 
 .btn {
   flex: 1;
-  height: 48px;
+  height: 50px;
   border: none;
-  border-radius: 24px;
+  border-radius: 25px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: transform 0.15s, opacity 0.15s;
+  transition: transform 0.15s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
 }
 
 .btn:active {
@@ -762,13 +860,15 @@ function formatAmount(amount: number) {
 
 .btn-reject {
   background: #fff;
-  border: 1px solid #ff4d4f;
+  border: 1.5px solid #ff4d4f;
   color: #ff4d4f;
+  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.15);
 }
 
 .btn-approve {
   background: linear-gradient(135deg, #52c41a, #389e0d);
   color: #fff;
+  box-shadow: 0 6px 18px rgba(82, 196, 26, 0.35);
 }
 
 .btn-approve:disabled {
@@ -790,6 +890,7 @@ function formatAmount(amount: number) {
   resize: none;
   box-sizing: border-box;
   font-family: inherit;
+  transition: border-color 0.2s;
 }
 
 .reject-textarea:focus {

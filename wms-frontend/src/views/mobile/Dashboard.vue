@@ -2,6 +2,11 @@
   <div class="m-dashboard">
     <!-- ===== 沉浸式渐变头部 ===== -->
     <div class="hero">
+      <!-- 多层渐变光斑 -->
+      <div class="hero-orb orb-a"></div>
+      <div class="hero-orb orb-b"></div>
+      <div class="hero-orb orb-c"></div>
+
       <!-- 状态栏占位 -->
       <div class="hero-status"></div>
 
@@ -17,89 +22,125 @@
         </div>
       </div>
 
-      <!-- 待办统计卡（白底悬浮） -->
-      <div class="todo-card">
-        <div class="todo-head">
-          <div class="todo-title">
-            <van-icon name="clock-o" size="16" color="#5a67d8" />
-            <span>待我处理</span>
+      <!-- ===== 待办主大数字卡 + 副小卡层级 ===== -->
+      <div class="todo-stack">
+        <!-- 主卡：今日待办总数 -->
+        <div class="todo-main" @click="goApproval('purchase')">
+          <div class="main-left">
+            <div class="main-label">今日待办</div>
+            <div class="main-num">{{ todoTotal }}</div>
+            <div class="main-sub">项任务待处理</div>
           </div>
-          <span class="todo-total">{{ todoTotal }} 项</span>
+          <div class="main-ring">
+            <van-icon name="clock-o" size="28" />
+          </div>
         </div>
-        <div class="todo-grid">
-          <div class="todo-cell" @click="goApproval('purchase')">
-            <div class="cell-num" :class="{ 'num-warn': todo.approval > 0 }">{{ todo.approval }}</div>
-            <div class="cell-label">待审批</div>
+
+        <!-- 副卡：4 分类小数字 -->
+        <div class="todo-subs">
+          <div class="sub-cell" @click="goApproval('purchase')">
+            <div class="sub-num" :class="{ warn: todo.approval > 0 }">{{ todo.approval }}</div>
+            <div class="sub-label">待审批</div>
           </div>
-          <div class="todo-cell" @click="goWork('stockin')">
-            <div class="cell-num" :class="{ 'num-warn': todo.stockin > 0 }">{{ todo.stockin }}</div>
-            <div class="cell-label">待上架</div>
+          <div class="sub-cell" @click="goWork('stockin')">
+            <div class="sub-num" :class="{ warn: todo.stockin > 0 }">{{ todo.stockin }}</div>
+            <div class="sub-label">待上架</div>
           </div>
-          <div class="todo-cell" @click="goWork('stockout')">
-            <div class="cell-num" :class="{ 'num-warn': todo.stockout > 0 }">{{ todo.stockout }}</div>
-            <div class="cell-label">待拣货</div>
+          <div class="sub-cell" @click="goWork('stockout')">
+            <div class="sub-num" :class="{ warn: todo.stockout > 0 }">{{ todo.stockout }}</div>
+            <div class="sub-label">待拣货</div>
           </div>
-          <div class="todo-cell" @click="goWork('check')">
-            <div class="cell-num" :class="{ 'num-warn': todo.check > 0 }">{{ todo.check }}</div>
-            <div class="cell-label">待盘点</div>
+          <div class="sub-cell" @click="goWork('check')">
+            <div class="sub-num" :class="{ warn: todo.check > 0 }">{{ todo.check }}</div>
+            <div class="sub-label">待盘点</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ===== 快捷入口九宫格 ===== -->
+    <!-- ===== 快捷入口：渐变大卡 + 圆形图标网格混合布局 ===== -->
     <div class="section">
       <div class="section-title">
         <span class="title-dot"></span>快捷入口
       </div>
+
+      <!-- 上排：两个渐变大卡 -->
+      <div class="quick-big-row">
+        <div class="quick-big big-a" @click="goQuick({ key: 'approval', text: '审批中心' })">
+          <div class="big-icon"><van-icon name="passed" size="24" color="#fff" /></div>
+          <div class="big-body">
+            <div class="big-text">审批中心</div>
+            <div class="big-sub">{{ todo.approval }} 单待我审批</div>
+          </div>
+          <van-icon name="arrow" size="14" color="rgba(255,255,255,0.8)" />
+        </div>
+        <div class="quick-big big-b" @click="goQuick({ key: 'stockin', text: '入库上架' })">
+          <div class="big-icon"><van-icon name="after-sale" size="24" color="#fff" /></div>
+          <div class="big-body">
+            <div class="big-text">入库上架</div>
+            <div class="big-sub">{{ todo.stockin }} 单待上架</div>
+          </div>
+          <van-icon name="arrow" size="14" color="rgba(255,255,255,0.8)" />
+        </div>
+      </div>
+
+      <!-- 下排：圆形图标网格 -->
       <div class="quick-grid">
         <div
-          v-for="it in quickEntries"
+          v-for="it in quickSmall"
           :key="it.key"
           class="quick-cell"
           @click="goQuick(it)"
         >
           <div class="quick-icon" :style="{ background: it.bg }">
-            <van-icon :name="it.icon" size="22" color="#fff" />
+            <van-icon :name="it.icon" size="20" color="#fff" />
           </div>
           <div class="quick-text">{{ it.text }}</div>
         </div>
       </div>
     </div>
 
-    <!-- ===== 今日动态 ===== -->
+    <!-- ===== 今日动态：时间轴样式 ===== -->
     <div class="section">
       <div class="section-title">
         <span class="title-dot"></span>今日动态
         <span class="section-sub">最近 10 条</span>
       </div>
-      <div class="feed-list">
+
+      <div class="timeline" v-if="feedList.length > 0">
         <div
           v-for="(it, idx) in feedList"
           :key="idx"
-          class="feed-item"
+          class="tl-item"
+          :class="{ last: idx === feedList.length - 1 }"
           @click="goFeedDetail(it)"
         >
-          <div class="feed-dot" :style="{ background: it.color }"></div>
-          <div class="feed-body">
-            <div class="feed-head">
-              <span class="feed-type-tag" :style="{ color: it.color, background: it.color + '1a' }">{{ it.typeText }}</span>
-              <span class="feed-no">{{ it.no }}</span>
-              <span class="feed-status" :style="{ color: it.color }">{{ it.statusText }}</span>
+          <!-- 左侧轴线 + 色点 -->
+          <div class="tl-rail">
+            <div class="tl-dot" :style="{ background: it.color, boxShadow: `0 0 0 4px ${it.color}22` }"></div>
+            <div class="tl-line" v-if="idx !== feedList.length - 1"></div>
+          </div>
+
+          <!-- 右侧卡片 -->
+          <div class="tl-card">
+            <div class="tl-head">
+              <span class="tl-tag" :style="{ color: it.color, background: it.color + '1a', borderColor: it.color + '40' }">{{ it.typeText }}</span>
+              <span class="tl-status" :style="{ color: it.color }">{{ it.statusText }}</span>
             </div>
-            <div class="feed-meta">
-              <span class="feed-party">{{ it.party || '-' }}</span>
-              <span class="feed-time">{{ it.time }}</span>
+            <div class="tl-no">{{ it.no }}</div>
+            <div class="tl-meta">
+              <span class="tl-party">{{ it.party || '-' }}</span>
+              <span class="tl-time">{{ it.time }}</span>
             </div>
           </div>
-          <van-icon name="arrow" size="12" color="#bbb" />
         </div>
-        <van-empty
-          v-if="feedList.length === 0 && !feedLoading"
-          description="今日暂无动态"
-          image="search"
-        />
       </div>
+
+      <van-empty
+        v-else-if="!feedLoading"
+        description="今日暂无动态"
+        image="search"
+      />
     </div>
 
     <!-- 底部退出按钮 -->
@@ -177,14 +218,12 @@ async function fetchTodos() {
   })
 }
 
-// ===== 快捷入口九宫格 =====
-const quickEntries = [
-  { key: 'stockin', icon: 'after-sale', text: '入库上架', bg: 'linear-gradient(135deg,#11998e,#38ef7d)' },
+// ===== 快捷入口（下排小图标网格） =====
+const quickSmall = [
   { key: 'stockout', icon: 'logistics', text: '出库拣货', bg: 'linear-gradient(135deg,#667eea,#764ba2)' },
   { key: 'transfer', icon: 'exchange', text: '调拨搬运', bg: 'linear-gradient(135deg,#f093fb,#f5576c)' },
   { key: 'check', icon: 'records', text: '盘点作业', bg: 'linear-gradient(135deg,#faad14,#ff7a45)' },
   { key: 'loss', icon: 'warning-o', text: '报损录入', bg: 'linear-gradient(135deg,#ff4d4f,#cf1322)' },
-  { key: 'approval', icon: 'passed', text: '审批中心', bg: 'linear-gradient(135deg,#5a67d8,#764ba2)' },
   { key: 'query', icon: 'search', text: '查询中心', bg: 'linear-gradient(135deg,#1890ff,#0050b3)' },
   { key: 'inventory', icon: 'points', text: '库存查询', bg: 'linear-gradient(135deg,#36d1dc,#5b86e5)' },
   { key: 'office', icon: 'notes-o', text: '用品登记', bg: 'linear-gradient(135deg,#834d9b,#d04ed6)' }
@@ -346,9 +385,42 @@ onMounted(() => {
 /* ===== 头部渐变区 ===== */
 .hero {
   background: linear-gradient(135deg, #667eea 0%, #5a67d8 50%, #764ba2 100%);
-  padding: 0 20px 60px;
+  padding: 0 20px 70px;
   position: relative;
   color: #fff;
+  overflow: hidden;
+}
+
+/* 多层渐变光斑 */
+.hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(45px);
+  pointer-events: none;
+}
+
+.orb-a {
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 154, 200, 0.4);
+  top: -40px;
+  right: -30px;
+}
+
+.orb-b {
+  width: 160px;
+  height: 160px;
+  background: rgba(129, 196, 253, 0.45);
+  bottom: 60px;
+  left: -50px;
+}
+
+.orb-c {
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.25);
+  top: 35%;
+  right: 20%;
 }
 
 /* 底部波浪过渡 */
@@ -361,23 +433,28 @@ onMounted(() => {
   height: 60px;
   background: #f4f5f9;
   border-radius: 30px 30px 0 0;
+  z-index: 3;
 }
 
 .hero-status {
   height: 44px;
+  position: relative;
+  z-index: 2;
 }
 
 .hero-head {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 2;
 }
 
 .hero-title {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .greeting {
@@ -392,95 +469,131 @@ onMounted(() => {
 }
 
 .user-role {
-  font-size: 13px;
-  opacity: 0.85;
-  margin-top: 2px;
+  font-size: 12px;
+  opacity: 0.8;
+  margin-top: 1px;
 }
 
 .hero-avatar {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   flex-shrink: 0;
 }
 
-/* 待办统计卡 */
-.todo-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 16px 18px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+/* ===== 待办主大数字卡 + 副小卡 ===== */
+.todo-stack {
+  position: relative;
+  z-index: 2;
 }
 
-.todo-head {
+.todo-main {
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 18px;
+  padding: 18px 20px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 28px rgba(45, 35, 110, 0.18);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: transform 0.15s;
 }
 
-.todo-title {
+.todo-main:active {
+  transform: scale(0.98);
+}
+
+.main-label {
+  font-size: 13px;
+  opacity: 0.85;
+  margin-bottom: 2px;
+}
+
+.main-num {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.main-sub {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 4px;
+}
+
+.main-ring {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a1a2e;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.todo-total {
-  font-size: 13px;
-  color: #888;
-  font-weight: 500;
-}
-
-.todo-grid {
+/* 副卡：4 分类小数字 */
+.todo-subs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
 
-.todo-cell {
+.sub-cell {
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 14px;
+  padding: 12px 4px 10px;
   text-align: center;
-  padding: 8px 4px;
-  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: transform 0.15s, background 0.2s;
 }
 
-.todo-cell:active {
-  background: rgba(102, 126, 234, 0.08);
+.sub-cell:active {
+  transform: scale(0.94);
+  background: rgba(255, 255, 255, 0.26);
 }
 
-.cell-num {
-  font-size: 26px;
+.sub-num {
+  font-size: 22px;
   font-weight: 800;
-  color: #1a1a2e;
+  color: #fff;
   line-height: 1.1;
   font-family: 'SF Mono', Menlo, Consolas, monospace;
 }
 
-.cell-num.num-warn {
-  color: #ff4d4f;
+.sub-num.warn {
+  color: #ffd666;
+  text-shadow: 0 0 8px rgba(255, 214, 102, 0.5);
 }
 
-.cell-label {
-  font-size: 12px;
-  color: #888;
+.sub-label {
+  font-size: 11px;
+  opacity: 0.85;
   margin-top: 4px;
 }
 
 /* ===== 区块通用 ===== */
 .section {
   padding: 6px 14px 0;
+  position: relative;
+  z-index: 4;
 }
 
 .section-title {
@@ -507,15 +620,80 @@ onMounted(() => {
   margin-left: auto;
 }
 
-/* ===== 快捷入口九宫格 ===== */
+/* ===== 快捷入口：上排渐变大卡 ===== */
+.quick-big-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.quick-big {
+  border-radius: 16px;
+  padding: 14px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.15s;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-big:active {
+  transform: scale(0.97);
+}
+
+.big-a {
+  background: linear-gradient(135deg, #5a67d8 0%, #764ba2 100%);
+}
+
+.big-b {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.big-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.big-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.big-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.big-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 下排：圆形图标网格 */
 .quick-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
   background: #fff;
-  border-radius: 14px;
-  padding: 16px 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  padding: 14px 8px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.05);
 }
 
 .quick-cell {
@@ -526,106 +704,122 @@ onMounted(() => {
 }
 
 .quick-cell:active {
-  transform: scale(0.94);
+  transform: scale(0.92);
 }
 
 .quick-icon {
-  width: 46px;
-  height: 46px;
+  width: 42px;
+  height: 42px;
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin: 0 auto 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .quick-text {
-  font-size: 13px;
-  color: #333;
+  font-size: 12px;
+  color: #595959;
   font-weight: 500;
 }
 
-/* ===== 今日动态列表 ===== */
-.feed-list {
+/* ===== 今日动态：时间轴 ===== */
+.timeline {
   background: #fff;
-  border-radius: 14px;
-  padding: 4px 0;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  padding: 12px 14px 4px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.05);
 }
 
-.feed-item {
+.tl-item {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-bottom: 1px solid #f7f7f7;
+  gap: 12px;
+  padding-bottom: 14px;
   cursor: pointer;
+}
+
+.tl-item:last-child {
+  padding-bottom: 8px;
+}
+
+.tl-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.tl-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.tl-line {
+  flex: 1;
+  width: 2px;
+  background: linear-gradient(180deg, #e8e8e8, transparent);
+  margin-top: 4px;
+  min-height: 30px;
+}
+
+.tl-card {
+  flex: 1;
+  min-width: 0;
+  background: #fafafe;
+  border-radius: 12px;
+  padding: 10px 12px;
   transition: background 0.15s;
 }
 
-.feed-item:last-child {
-  border-bottom: none;
+.tl-item:active .tl-card {
+  background: #f0f0f8;
 }
 
-.feed-item:active {
-  background: #fafafe;
-}
-
-.feed-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.feed-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.feed-head {
+.tl-head {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
   margin-bottom: 4px;
 }
 
-.feed-type-tag {
+.tl-tag {
   font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 500;
-  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-weight: 600;
+  border: 1px solid transparent;
 }
 
-.feed-no {
+.tl-status {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tl-no {
   font-size: 13px;
   font-weight: 600;
   color: #1a1a2e;
   font-family: 'SF Mono', Menlo, Consolas, monospace;
-  flex: 1;
-  min-width: 0;
+  margin-bottom: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.feed-status {
-  font-size: 12px;
-  font-weight: 500;
-  flex-shrink: 0;
-}
-
-.feed-meta {
+.tl-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12px;
+  font-size: 11px;
   color: #999;
 }
 
-.feed-party {
+.tl-party {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -634,10 +828,9 @@ onMounted(() => {
   margin-right: 8px;
 }
 
-.feed-time {
-  font-size: 11px;
-  color: #bbb;
+.tl-time {
   flex-shrink: 0;
+  color: #bbb;
 }
 
 :deep(.van-empty) {

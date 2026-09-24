@@ -1,7 +1,12 @@
 <template>
   <div class="m-list">
-    <!-- ===== 头部渐变区 ===== -->
+    <!-- ===== 沉浸式渐变头部 ===== -->
     <div class="hero">
+      <!-- 多层渐变光斑 -->
+      <div class="hero-orb orb-a"></div>
+      <div class="hero-orb orb-b"></div>
+      <div class="hero-orb orb-c"></div>
+
       <!-- 状态栏占位 -->
       <div class="hero-status"></div>
 
@@ -16,25 +21,29 @@
         </div>
       </div>
 
-      <!-- 待审批大数字卡 -->
-      <div class="stat-card" @click="activeTab = 'all'; switchTab('all')">
-        <div class="stat-icon">
-          <van-icon name="clock-o" size="22" color="#667eea" />
+      <!-- 待审批大数字卡（玻璃拟态） -->
+      <div class="stat-card" @click="switchTab('all')">
+        <div class="stat-ring">
+          <van-icon name="clock-o" size="22" color="#fff" />
         </div>
         <div class="stat-info">
           <div class="stat-num">{{ pendingTotal }}</div>
           <div class="stat-label">待我审批</div>
         </div>
-        <van-icon name="arrow" size="16" color="#bbb" />
+        <div class="stat-tag" v-if="pendingTotal > 0">
+          <van-icon name="fire" size="12" color="#fff" />
+        </div>
       </div>
 
-      <!-- 单据类型 Tab（横向滚动） -->
+      <!-- 单据类型 Tab（玻璃拟态横向滚动 + 滑块） -->
       <div class="hero-tabs">
+        <div class="tab-slider" :style="sliderStyle"></div>
         <div
           v-for="t in billTypes"
           :key="t.key"
           class="hero-tab"
           :class="{ active: activeTab === t.key }"
+          :ref="(el) => setTabRef(t.key, el as HTMLElement)"
           @click="switchTab(t.key)"
         >
           <span>{{ t.text }}</span>
@@ -49,12 +58,18 @@
         class="sub-tab"
         :class="{ active: statusTab === 0 }"
         @click="switchStatus(0)"
-      >待审批</div>
+      >
+        <span class="sub-text">待审批</span>
+        <span class="sub-count" v-if="statusTab === 0">{{ list.length }}</span>
+      </div>
       <div
         class="sub-tab"
         :class="{ active: statusTab === 1 }"
         @click="switchStatus(1)"
-      >已审批</div>
+      >
+        <span class="sub-text">已审批</span>
+        <span class="sub-count" v-if="statusTab === 1">{{ list.length }}</span>
+      </div>
     </div>
 
     <!-- 列表区 -->
@@ -71,11 +86,11 @@
           class="order-card"
           @click="goDetail(item)"
         >
-          <!-- 左侧状态条 -->
-          <div class="card-indicator" :class="statusTab === 0 ? 'wait' : 'done'" />
+          <!-- 左侧状态色渐变条 -->
+          <div class="card-indicator" :class="statusTab === 0 ? 'wait' : 'done'"></div>
           <div class="card-body">
             <div class="card-head">
-              <span class="type-tag" :style="{ color: getTypeColor(item.type), background: getTypeColor(item.type) + '1a' }">
+              <span class="type-tag" :style="{ color: getTypeColor(item.type), background: getTypeColor(item.type) + '1a', borderColor: getTypeColor(item.type) + '40' }">
                 {{ getTypeText(item.type) }}
               </span>
               <span class="order-no">{{ item.no }}</span>
@@ -109,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast, showConfirmDialog } from 'vant'
 import {
@@ -220,6 +235,30 @@ function getTypeText(type: string): string {
 function getTypeColor(type: string): string {
   return billTypeMap[type]?.color || '#8c8c8c'
 }
+
+// ===== Tab 滑块动画 =====
+const tabRefs = ref<Record<string, HTMLElement | null>>({})
+const sliderStyle = ref({ width: '0px', transform: 'translateX(0px)' })
+
+function setTabRef(key: string, el: HTMLElement | null) {
+  tabRefs.value[key] = el
+}
+
+async function updateSlider() {
+  await nextTick()
+  const el = tabRefs.value[activeTab.value]
+  if (el) {
+    sliderStyle.value = {
+      width: el.offsetWidth + 'px',
+      transform: `translateX(${el.offsetLeft}px)`
+    }
+  }
+}
+
+watch(activeTab, () => updateSlider())
+onMounted(() => {
+  setTimeout(updateSlider, 100)
+})
 
 // 把后端 row 标准化为统一结构
 function normalizeBill(row: any, type: string): any {
@@ -392,9 +431,42 @@ onMounted(() => {
 /* ===== 头部渐变区 ===== */
 .hero {
   background: linear-gradient(135deg, #667eea 0%, #5a67d8 50%, #764ba2 100%);
-  padding: 0 20px 60px;
+  padding: 0 20px 70px;
   position: relative;
   color: #fff;
+  overflow: hidden;
+}
+
+/* 多层渐变光斑 */
+.hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(45px);
+  pointer-events: none;
+}
+
+.orb-a {
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 154, 200, 0.4);
+  top: -40px;
+  right: -30px;
+}
+
+.orb-b {
+  width: 160px;
+  height: 160px;
+  background: rgba(129, 196, 253, 0.45);
+  bottom: 80px;
+  left: -50px;
+}
+
+.orb-c {
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.25);
+  top: 30%;
+  right: 18%;
 }
 
 /* 底部波浪过渡 */
@@ -407,10 +479,13 @@ onMounted(() => {
   height: 60px;
   background: #f4f5f9;
   border-radius: 30px 30px 0 0;
+  z-index: 3;
 }
 
 .hero-status {
   height: 44px;
+  position: relative;
+  z-index: 2;
 }
 
 .hero-head {
@@ -418,6 +493,8 @@ onMounted(() => {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 18px;
+  position: relative;
+  z-index: 2;
 }
 
 .hero-title {
@@ -438,38 +515,48 @@ onMounted(() => {
 }
 
 .hero-avatar {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   flex-shrink: 0;
 }
 
-/* 待审批大数字卡 */
+/* 待审批大数字卡（玻璃拟态） */
 .stat-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 18px;
   padding: 16px 18px;
   display: flex;
   align-items: center;
   gap: 14px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-  margin-bottom: 18px;
+  box-shadow: 0 8px 28px rgba(45, 35, 110, 0.18);
+  margin-bottom: 16px;
   cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: transform 0.15s;
 }
 
-.stat-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+.stat-card:active {
+  transform: scale(0.98);
+}
+
+.stat-ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -481,37 +568,67 @@ onMounted(() => {
 }
 
 .stat-num {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 800;
-  color: #1a1a2e;
+  color: #fff;
   line-height: 1.1;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .stat-label {
-  font-size: 13px;
-  color: #888;
+  font-size: 12px;
+  opacity: 0.85;
   margin-top: 2px;
 }
 
-/* 单据类型 Tab（横向滚动） */
+.stat-tag {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff9a56, #ff6a00);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(255, 106, 0, 0.4);
+  flex-shrink: 0;
+}
+
+/* 单据类型 Tab（玻璃拟态 + 滑块动画） */
 .hero-tabs {
+  position: relative;
+  z-index: 2;
   display: flex;
   gap: 8px;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   padding: 4px 0;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  border-radius: 20px;
+  padding: 6px;
 }
 
 .hero-tabs::-webkit-scrollbar {
   display: none;
 }
 
+/* 滑块 */
+.tab-slider {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  height: calc(100% - 12px);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+
 .hero-tab {
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(8px);
-  border-radius: 18px;
   padding: 7px 14px;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.9);
@@ -520,15 +637,14 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.2s;
+  transition: color 0.25s;
+  position: relative;
+  z-index: 1;
 }
 
 .hero-tab.active {
-  background: #fff;
   color: #5a67d8;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-weight: 700;
 }
 
 .dot {
@@ -547,65 +663,96 @@ onMounted(() => {
 .sub-tabs {
   display: flex;
   background: #fff;
-  padding: 8px 16px;
-  gap: 8px;
+  padding: 10px 16px;
+  gap: 10px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   position: relative;
-  z-index: 2;
+  z-index: 4;
 }
 
 .sub-tab {
   flex: 1;
   text-align: center;
-  padding: 8px 0;
+  padding: 9px 0;
   font-size: 14px;
   color: #888;
   font-weight: 500;
   cursor: pointer;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #f7f7fa;
-  transition: all 0.2s;
+  transition: all 0.25s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .sub-tab.active {
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.sub-count {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.3);
+  color: inherit;
+}
+
+.sub-tab:not(.active) .sub-count {
+  background: #e8e8f0;
+  color: #888;
 }
 
 /* ===== 列表区 ===== */
 .pull-wrap {
   flex: 1;
   overflow-y: auto;
-  padding-top: 8px;
+  padding-top: 10px;
 }
 
 .order-card {
   background: #fff;
   margin: 0 14px 12px;
-  border-radius: 14px;
+  border-radius: 16px;
   display: flex;
   overflow: hidden;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   cursor: pointer;
-  transition: transform 0.15s;
+  transition: transform 0.15s, box-shadow 0.2s;
+  position: relative;
 }
 
 .order-card:active {
   transform: scale(0.985);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
 .card-indicator {
-  width: 4px;
+  width: 5px;
   flex-shrink: 0;
+  position: relative;
 }
 
-.card-indicator.wait {
-  background: linear-gradient(180deg, #faad14, #ff7a45);
+.card-indicator::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 0 4px 4px 0;
 }
 
-.card-indicator.done {
-  background: linear-gradient(180deg, #52c41a, #389e0d);
+.card-indicator.wait::after {
+  background: linear-gradient(180deg, #faad14 0%, #ff7a45 100%);
+}
+
+.card-indicator.done::after {
+  background: linear-gradient(180deg, #52c41a 0%, #389e0d 100%);
 }
 
 .card-body {
@@ -617,15 +764,16 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .type-tag {
   font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
   flex-shrink: 0;
+  border: 1px solid transparent;
 }
 
 .order-no {
@@ -640,17 +788,20 @@ onMounted(() => {
 }
 
 .money {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
-  color: #ff4d4f;
+  background: linear-gradient(135deg, #ff4d4f, #ff7a45);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   flex-shrink: 0;
 }
 
 .card-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 8px;
+  gap: 5px;
+  margin-bottom: 10px;
 }
 
 .info-line {
@@ -682,7 +833,7 @@ onMounted(() => {
 .items-count {
   font-size: 12px;
   color: #667eea;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 :deep(.van-empty) {
