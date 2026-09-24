@@ -24,13 +24,19 @@ export const constantRoutes: RouteRecordRaw[] = [
     meta: { title: '登录' }
   },
   {
+    path: '/mobile/dashboard',
+    name: 'MobileDashboard',
+    component: () => import('@/views/mobile/Dashboard.vue'),
+    meta: { title: '工作台' }
+  },
+  {
     path: '/mobile/approval',
     name: 'MobileApprovalList',
     component: () => import('@/views/mobile/ApprovalList.vue'),
-    meta: { title: '采购审批' }
+    meta: { title: '审批中心' }
   },
   {
-    path: '/mobile/approval/:id',
+    path: '/mobile/approval/:type/:id',
     name: 'MobileApprovalDetail',
     component: () => import('@/views/mobile/ApprovalDetail.vue'),
     meta: { title: '审批详情' }
@@ -322,7 +328,7 @@ router.beforeEach(async (to, _from, next) => {
   // 手机/平板访问 PC 页面时自动跳转到移动端
   if (deviceIsMobile && !isMobile && !to.path.startsWith('/print/') && to.path !== '/login') {
     if (userStore.token) {
-      next('/mobile/approval')
+      next('/mobile/dashboard')
     } else {
       next('/mobile/login')
     }
@@ -335,7 +341,7 @@ router.beforeEach(async (to, _from, next) => {
       next('/')
       NProgress.done()
     } else if (to.path === '/mobile/login') {
-      next('/mobile/approval')
+      next('/mobile/dashboard')
       NProgress.done()
     } else {
       if (!userStore.username) {

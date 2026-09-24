@@ -10,8 +10,8 @@
         <div class="circle-btn" @click="goBack">
           <van-icon name="arrow-left" size="18" />
         </div>
-        <div class="circle-btn ghost" @click="handleLogout" v-if="order?.status === 2">
-          <van-icon name="share-o" size="16" />
+        <div class="hero-type-tag">
+          <span class="type-tag-text" :style="{ color: typeColor }">{{ typeText }}单</span>
         </div>
       </div>
 
@@ -20,7 +20,7 @@
         <van-loading type="spinner" color="#fff" size="24" />
       </div>
 
-      <!-- 头部摘要（数据加载完才显示） -->
+      <!-- 头部摘要 -->
       <template v-else-if="order">
         <!-- 状态 Pill + 单号 -->
         <div class="hero-status-row">
@@ -31,38 +31,38 @@
         </div>
 
         <!-- 金额大数字 -->
-        <div class="hero-amount">
-          <span class="amount-label">采购总金额</span>
+        <div class="hero-amount" v-if="order.totalAmount">
+          <span class="amount-label">单据金额</span>
           <span class="amount-num">￥{{ formatAmount(order.totalAmount) }}</span>
         </div>
 
         <!-- 关键信息横排 -->
         <div class="hero-meta">
           <div class="meta-item">
-            <div class="meta-label">供应商</div>
-            <div class="meta-value">{{ order.supplierName || '-' }}</div>
-          </div>
-          <div class="meta-divider" />
-          <div class="meta-item">
-            <div class="meta-label">入库仓库</div>
-            <div class="meta-value">{{ order.warehouseName || '-' }}</div>
+            <div class="meta-label">{{ partyLabel }}</div>
+            <div class="meta-value">{{ partyValue || '-' }}</div>
           </div>
           <div class="meta-divider" />
           <div class="meta-item">
             <div class="meta-label">商品种类</div>
             <div class="meta-value">{{ items.length }}</div>
           </div>
+          <div class="meta-divider" />
+          <div class="meta-item">
+            <div class="meta-label">总数量</div>
+            <div class="meta-value">{{ order.totalQty || 0 }}</div>
+          </div>
         </div>
 
         <!-- 单号 + 时间 -->
         <div class="hero-sub">
-          <span class="hero-purchase-no">{{ order.purchaseNo }}</span>
+          <span class="hero-bill-no">{{ billNo }}</span>
           <span class="hero-time">{{ formatDate(order.createTime) }}</span>
         </div>
       </template>
     </div>
 
-    <!-- ===== 内容区（在波浪下方） ===== -->
+    <!-- ===== 内容区 ===== -->
     <template v-if="!loading && order">
       <!-- 基本信息 -->
       <div class="section">
@@ -70,40 +70,17 @@
           <span class="title-dot"></span>基本信息
         </div>
         <div class="info-card">
-          <div class="info-row">
-            <span class="info-k">采购员</span>
-            <span class="info-v">{{ order.purchaserName || '-' }}</span>
+          <div class="info-row" v-for="(row, idx) in basicRows" :key="idx">
+            <span class="info-k">{{ row.label }}</span>
+            <span class="info-v" :class="{ mono: row.mono && !row.value }">{{ row.value || '—' }}</span>
           </div>
-          <div class="info-row">
-            <span class="info-k">创建人</span>
-            <span class="info-v">{{ order.createName || '-' }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-k">总数量</span>
-            <span class="info-v">{{ order.totalQty || 0 }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-k">备注</span>
-            <span class="info-v" :class="{ mono: !order.remark }">{{ order.remark || '—' }}</span>
-          </div>
-          <!-- 已审批的显示审核信息 -->
-          <template v-if="order.auditBy">
-            <div class="info-row">
-              <span class="info-k">审核人</span>
-              <span class="info-v">{{ order.auditName || '-' }}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-k">审核时间</span>
-              <span class="info-v">{{ formatDate(order.auditTime) }}</span>
-            </div>
-          </template>
         </div>
       </div>
 
-      <!-- 采购明细 -->
-      <div class="section">
+      <!-- 明细 -->
+      <div class="section" v-if="items.length > 0">
         <div class="section-title">
-          <span class="title-dot"></span>采购明细
+          <span class="title-dot"></span>明细
           <span class="section-sub">共 {{ items.length }} 项</span>
         </div>
         <div
@@ -113,7 +90,7 @@
         >
           <div class="item-top">
             <span class="item-idx">#{{ idx + 1 }}</span>
-            <span class="item-name">{{ item.skuName || item.skuCode }}</span>
+            <span class="item-name">{{ getItemName(item) }}</span>
           </div>
           <div class="item-grid">
             <div class="grid-cell">
@@ -122,26 +99,26 @@
             </div>
             <div class="grid-cell">
               <div class="gk">规格</div>
-              <div class="gv">{{ item.specText || '-' }}</div>
+              <div class="gv">{{ item.specText || item.spec || '-' }}</div>
             </div>
             <div class="grid-cell">
               <div class="gk">数量</div>
-              <div class="gv">{{ item.quantity }}</div>
+              <div class="gv">{{ item.quantity || item.qty || 0 }}</div>
             </div>
             <div class="grid-cell">
               <div class="gk">单价</div>
-              <div class="gv">￥{{ formatAmount(item.purchasePrice) }}</div>
+              <div class="gv">￥{{ formatAmount(item.unitPrice || item.price) }}</div>
             </div>
           </div>
           <div class="item-total">
             <span>金额小计</span>
-            <span class="item-subtotal">￥{{ formatAmount(item.subtotal) }}</span>
+            <span class="item-subtotal">￥{{ formatAmount(item.subtotal || (item.quantity * item.unitPrice)) }}</span>
           </div>
         </div>
       </div>
     </template>
 
-    <van-empty v-else-if="!loading" description="采购单不存在" />
+    <van-empty v-else-if="!loading" description="单据不存在" />
 
     <!-- 底部操作栏 -->
     <div v-if="order && order.status === 1" class="action-bar">
@@ -184,7 +161,9 @@
 import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showFailToast, showSuccessToast } from 'vant'
-import { purchaseApi } from '@/api'
+import {
+  purchaseApi, stockInApi, stockOutApi, transferApi, lossApi, saleApi
+} from '@/api'
 
 defineOptions({ name: 'MobileApprovalDetail' })
 
@@ -198,18 +177,115 @@ const showRejectDialog = ref(false)
 const rejectRemark = ref('')
 const submitting = ref(false)
 
-onMounted(async () => {
-  const id = route.params.id as string
-  try {
-    const res: any = await purchaseApi.getById(id)
-    const data = res.data || res
-    order.value = data.order || data
-    items.value = data.items || []
-  } catch (e: any) {
-    showFailToast(e.message || '加载失败')
-  } finally {
-    loading.value = false
+// ===== 单据类型配置（详情/审核适配器） =====
+interface DetailConfig {
+  key: string
+  text: string
+  color: string
+  noField: string
+  partyLabel: string
+  partyField: string[]
+  amountLabel: string
+  getById: (id: string) => Promise<any>
+  audit: (data: any) => Promise<any>
+}
+
+const typeConfigMap: Record<string, DetailConfig> = {
+  purchase: {
+    key: 'purchase', text: '采购', color: '#5a67d8',
+    noField: 'purchaseNo', partyLabel: '供应商', partyField: ['supplierName'],
+    amountLabel: '采购总金额',
+    getById: (id) => purchaseApi.getById(id),
+    audit: (data) => purchaseApi.audit(data)
+  },
+  stockin: {
+    key: 'stockin', text: '入库', color: '#52c41a',
+    noField: 'stockInNo', partyLabel: '供应商', partyField: ['supplierName'],
+    amountLabel: '入库总金额',
+    getById: (id) => stockInApi.getById(id),
+    audit: (data) => stockInApi.audit(data)
+  },
+  stockout: {
+    key: 'stockout', text: '出库', color: '#1890ff',
+    noField: 'stockOutNo', partyLabel: '客户', partyField: ['customerName'],
+    amountLabel: '出库总金额',
+    getById: (id) => stockOutApi.getById(id),
+    audit: (data) => stockOutApi.audit(data)
+  },
+  transfer: {
+    key: 'transfer', text: '调拨', color: '#f5576c',
+    noField: 'transferNo', partyLabel: '仓库', partyField: ['outWarehouseName', 'inWarehouseName'],
+    amountLabel: '调拨总金额',
+    getById: (id) => transferApi.getById(id),
+    audit: (data) => transferApi.audit(data)
+  },
+  loss: {
+    key: 'loss', text: '报损', color: '#ff4d4f',
+    noField: 'lossNo', partyLabel: '报损商品', partyField: ['skuName'],
+    amountLabel: '报损总金额',
+    getById: (id) => lossApi.getById(id),
+    audit: (data) => lossApi.audit(data)
+  },
+  sale: {
+    key: 'sale', text: '销售', color: '#faad14',
+    noField: 'saleNo', partyLabel: '客户', partyField: ['customerName'],
+    amountLabel: '销售总金额',
+    getById: (id) => saleApi.getById(id),
+    audit: (data) => saleApi.audit(data)
   }
+}
+
+// 当前类型配置（默认采购，兜底）
+const currentType = computed<DetailConfig>(() => {
+  const t = route.params.type as string
+  return typeConfigMap[t] || typeConfigMap.purchase
+})
+
+const typeText = computed(() => currentType.value.text)
+const typeColor = computed(() => currentType.value.color)
+const partyLabel = computed(() => currentType.value.partyLabel)
+
+const billNo = computed(() => {
+  if (!order.value) return '-'
+  return order.value[currentType.value.noField] || order.value.billNo || '-'
+})
+
+const partyValue = computed(() => {
+  if (!order.value) return ''
+  if (currentType.value.key === 'transfer') {
+    return [order.value.outWarehouseName, order.value.inWarehouseName]
+      .filter(Boolean).join(' → ')
+  }
+  for (const f of currentType.value.partyField) {
+    if (order.value[f]) return order.value[f]
+  }
+  return ''
+})
+
+// 基本信息（统一展示，按类型略作调整）
+const basicRows = computed(() => {
+  if (!order.value) return []
+  const rows = [
+    { label: '创建人', value: order.value.createName || '-' },
+    { label: '总数量', value: order.value.totalQty || 0 },
+    { label: '备注', value: order.value.remark || '', mono: true }
+  ]
+  if (order.value.auditBy) {
+    rows.push({ label: '审核人', value: order.value.auditName || '-' })
+    rows.push({ label: '审核时间', value: formatDate(order.value.auditTime) })
+  }
+  // 调拨单额外信息
+  if (currentType.value.key === 'transfer') {
+    rows.splice(1, 0, {
+      label: '调出仓库',
+      value: order.value.outWarehouseName || '-'
+    })
+    rows.splice(2, 0, {
+      label: '调入仓库',
+      value: order.value.inWarehouseName || '-'
+    })
+  }
+  return rows
 })
 
 // 状态文案
@@ -240,10 +316,39 @@ const statusIcon = computed(() => {
   return 'clock-o'
 })
 
+// 获取明细商品名（兼容多种字段）
+function getItemName(item: any): string {
+  return item.skuName || item.goodsName || item.spuName || item.skuCode || '-'
+}
+
+// ===== 加载详情 =====
+onMounted(async () => {
+  const id = route.params.id as string
+  if (!id) {
+    loading.value = false
+    return
+  }
+  try {
+    const res: any = await currentType.value.getById(id)
+    const data = res.data || res
+    // 兼容两种返回结构：{order, items} 或 flat
+    order.value = data.order || data.bill || data
+    items.value = data.items || data.billItems || []
+  } catch (e: any) {
+    showFailToast(e.message || '加载失败')
+  } finally {
+    loading.value = false
+  }
+})
+
+// ===== 审核操作 =====
 async function handleApprove() {
   submitting.value = true
   try {
-    await purchaseApi.audit({ id: route.params.id, pass: true })
+    await currentType.value.audit({
+      id: route.params.id,
+      pass: true
+    })
     showSuccessToast('审核通过')
     setTimeout(() => router.replace('/mobile/approval'), 600)
   } catch (e: any) {
@@ -265,7 +370,7 @@ async function handleReject() {
   }
   submitting.value = true
   try {
-    await purchaseApi.audit({
+    await currentType.value.audit({
       id: route.params.id,
       pass: false,
       remark: rejectRemark.value.trim()
@@ -282,10 +387,6 @@ async function handleReject() {
 
 function goBack() {
   router.back()
-}
-
-function handleLogout() {
-  router.replace('/mobile/approval')
 }
 
 function formatDate(dateStr: string) {
@@ -363,9 +464,17 @@ function formatAmount(amount: number) {
   color: #fff;
 }
 
-.circle-btn.ghost {
-  background: transparent;
-  border-color: rgba(255, 255, 255, 0.3);
+.hero-type-tag {
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  padding: 6px 12px;
+}
+
+.type-tag-text {
+  font-size: 13px;
+  font-weight: 600;
 }
 
 /* 加载中 */
@@ -425,6 +534,7 @@ function formatAmount(amount: number) {
 .meta-item {
   flex: 1;
   text-align: center;
+  padding: 0 4px;
 }
 
 .meta-label {
@@ -457,7 +567,7 @@ function formatAmount(amount: number) {
   opacity: 0.8;
 }
 
-.hero-purchase-no {
+.hero-bill-no {
   font-family: 'SF Mono', Menlo, Consolas, monospace;
   font-size: 12px;
   background: rgba(255, 255, 255, 0.15);
@@ -559,12 +669,18 @@ function formatAmount(amount: number) {
   align-items: center;
   justify-content: center;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 .item-name {
   font-size: 15px;
   font-weight: 600;
   color: #1a1a2e;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .item-grid {

@@ -10,7 +10,7 @@
         <van-icon name="shopping-cart-o" size="36" />
       </div>
       <h1 class="brand-title">WMS 仓储管理</h1>
-      <p class="brand-sub">采购审批 · 移动端</p>
+      <p class="brand-sub">仓储作业 · 移动端</p>
     </div>
 
     <!-- 登录卡片 -->
@@ -81,7 +81,7 @@ async function handleLogin() {
     await userStore.login({ username: form.username, password: form.password })
     await userStore.fetchUserInfo()
     showToast({ message: '登录成功', type: 'success' })
-    router.replace('/mobile/approval')
+    router.replace('/mobile/dashboard')
   } catch (e: any) {
     showToast(e.message || '登录失败')
   } finally {
