@@ -18,6 +18,24 @@ export const constantRoutes: RouteRecordRaw[] = [
     meta: { title: '单据打印' }
   },
   {
+    path: '/mobile/login',
+    name: 'MobileLogin',
+    component: () => import('@/views/mobile/Login.vue'),
+    meta: { title: '登录' }
+  },
+  {
+    path: '/mobile/approval',
+    name: 'MobileApprovalList',
+    component: () => import('@/views/mobile/ApprovalList.vue'),
+    meta: { title: '采购审批' }
+  },
+  {
+    path: '/mobile/approval/:id',
+    name: 'MobileApprovalDetail',
+    component: () => import('@/views/mobile/ApprovalDetail.vue'),
+    meta: { title: '审批详情' }
+  },
+  {
     path: '/',
     component: Layout,
     redirect: '/dashboard',
@@ -260,7 +278,7 @@ const router = createRouter({
   routes: constantRoutes
 })
 
-const whiteList = ['/login']
+const whiteList = ['/login', '/mobile/login']
 
 /**
  * 从后端菜单权限树收集允许访问的绝对路径集合
@@ -283,15 +301,41 @@ function collectAllowedPaths(routers: any[], prefix = '', set = new Set<string>(
 // 任何登录用户都可访问的兜底页面
 const alwaysAllowed = ['/dashboard']
 
+/**
+ * 检测当前设备是否为手机或平板（通过 UserAgent + 屏幕宽度双重判断）
+ */
+function isMobileDevice(): boolean {
+  const ua = navigator.userAgent.toLowerCase()
+  const isMobileUA = /iphone|ipad|ipod|android|mobile|harmonyos|openharmony|micromessenger/.test(ua)
+  const narrowScreen = window.innerWidth <= 1024
+  return isMobileUA || narrowScreen
+}
+
 router.beforeEach(async (to, _from, next) => {
   NProgress.start()
   document.title = `${to.meta.title || ''} - WMS仓储管理系统`
 
   const userStore = useUserStore()
+  const isMobile = to.path.startsWith('/mobile')
+  const deviceIsMobile = isMobileDevice()
+
+  // 手机/平板访问 PC 页面时自动跳转到移动端
+  if (deviceIsMobile && !isMobile && !to.path.startsWith('/print/') && to.path !== '/login') {
+    if (userStore.token) {
+      next('/mobile/approval')
+    } else {
+      next('/mobile/login')
+    }
+    NProgress.done()
+    return
+  }
 
   if (userStore.token) {
     if (to.path === '/login') {
       next('/')
+      NProgress.done()
+    } else if (to.path === '/mobile/login') {
+      next('/mobile/approval')
       NProgress.done()
     } else {
       if (!userStore.username) {
@@ -299,14 +343,13 @@ router.beforeEach(async (to, _from, next) => {
           await userStore.fetchUserInfo()
         } catch (e) {
           userStore.resetState()
-          next('/login')
+          next(isMobile ? '/mobile/login' : '/login')
           NProgress.done()
           return
         }
       }
-      // 越权 URL 拦截：不在用户菜单权限内的一律跳回仪表盘
-      // 注意：allowed 为空（未分配任何菜单）时也一律拦截，绝不放行全部页面
-      if (!to.path.startsWith('/print/')) {
+      // 移动端路由跳过 PC 端菜单权限校验
+      if (!isMobile && !to.path.startsWith('/print/')) {
         const allowed = collectAllowedPaths(userStore.routers)
         const pass = allowed.has(to.path) || alwaysAllowed.includes(to.path)
         if (!pass) {
@@ -321,7 +364,7 @@ router.beforeEach(async (to, _from, next) => {
     if (whiteList.includes(to.path)) {
       next()
     } else {
-      next('/login')
+      next(isMobile ? '/mobile/login' : '/login')
       NProgress.done()
     }
   }

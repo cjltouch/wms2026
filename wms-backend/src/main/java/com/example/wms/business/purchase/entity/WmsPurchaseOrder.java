@@ -37,9 +37,15 @@ public class WmsPurchaseOrder implements Serializable {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long supplierId;
 
+    /** 供应商名称（保存时冗余写入，查询时补填） */
+    private String supplierName;
+
     /** 仓库ID */
     @JsonSerialize(using = ToStringSerializer.class)
     private Long warehouseId;
+
+    /** 仓库名称（保存时冗余写入，查询时补填） */
+    private String warehouseName;
 
     /** 采购员ID */
     @TableField("purchaser_id")

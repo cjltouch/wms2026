@@ -40,27 +40,62 @@ public class WmsPurchaseOrderServiceImpl extends ServiceImpl<WmsPurchaseOrderMap
     private final WmsPurchaseOrderItemMapper itemMapper;
     private final WmsPurchaseStatusLogMapper statusLogMapper;
     private final com.example.wms.system.service.SysUserService sysUserService;
+    private final com.example.wms.business.basedata.supplier.service.WmsSupplierService supplierService;
+    private final com.example.wms.business.basedata.warehouse.service.WmsWarehouseService warehouseService;
 
-    /** 批量回填创建人/审核人/采购员姓名 */
-    private void fillUserNames(List<WmsPurchaseOrder> orders) {
+    /**
+     * 批量回填采购单的供应商名、仓库名、创建人、审核人、采购员
+     * （优先读表字段 supplier_name/warehouse_name，为空时通过 ID 查询回填）
+     */
+    private void fillPurchaseNames(List<WmsPurchaseOrder> orders) {
         if (orders == null || orders.isEmpty()) return;
+
+        // 1) 用户名字回填（createName/purchaserName/auditName — 非持久化字段）
         java.util.Set<Long> userIds = new java.util.HashSet<>();
         for (WmsPurchaseOrder o : orders) {
             if (o.getCreateBy() != null) userIds.add(o.getCreateBy());
             if (o.getAuditBy() != null) userIds.add(o.getAuditBy());
             if (o.getPurchaseBy() != null) userIds.add(o.getPurchaseBy());
         }
-        if (userIds.isEmpty()) return;
-        Map<Long, String> nameMap = new java.util.HashMap<>();
-        sysUserService.listByIds(userIds).forEach(u -> nameMap.put(u.getUserId(),
-                org.springframework.util.StringUtils.hasText(u.getRealName())
-                        ? u.getRealName()
-                        : (org.springframework.util.StringUtils.hasText(u.getNickName())
-                                ? u.getNickName() : u.getUserName())));
+        Map<Long, String> userMap = new java.util.HashMap<>();
+        if (!userIds.isEmpty()) {
+            sysUserService.listByIds(userIds).forEach(u -> userMap.put(u.getUserId(),
+                    StringUtils.hasText(u.getRealName())
+                            ? u.getRealName()
+                            : (StringUtils.hasText(u.getNickName()) ? u.getNickName() : u.getUserName())));
+        }
+
+        // 2) 供应商名字回填（supplier_name 是持久化字段，为空时补填）
+        java.util.Set<Long> supplierIds = orders.stream()
+                .map(WmsPurchaseOrder::getSupplierId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        Map<Long, String> supplierMap = new java.util.HashMap<>();
+        if (!supplierIds.isEmpty()) {
+            supplierService.listByIds(supplierIds).forEach(s -> supplierMap.put(s.getSupplierId(), s.getSupplierName()));
+        }
+
+        // 3) 仓库名字回填（warehouse_name 是持久化字段，为空时补填）
+        java.util.Set<Long> warehouseIds = orders.stream()
+                .map(WmsPurchaseOrder::getWarehouseId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        Map<Long, String> warehouseMap = new java.util.HashMap<>();
+        if (!warehouseIds.isEmpty()) {
+            warehouseService.listByIds(warehouseIds).forEach(w -> warehouseMap.put(w.getWarehouseId(), w.getWarehouseName()));
+        }
+
+        // 4) 逐项填充
         for (WmsPurchaseOrder o : orders) {
-            o.setCreateName(o.getCreateBy() != null ? nameMap.get(o.getCreateBy()) : null);
-            o.setAuditName(o.getAuditBy() != null ? nameMap.get(o.getAuditBy()) : null);
-            o.setPurchaserName(o.getPurchaseBy() != null ? nameMap.get(o.getPurchaseBy()) : null);
+            if (o.getCreateBy() != null) o.setCreateName(userMap.get(o.getCreateBy()));
+            if (o.getAuditBy() != null) o.setAuditName(userMap.get(o.getAuditBy()));
+            if (o.getPurchaseBy() != null) o.setPurchaserName(userMap.get(o.getPurchaseBy()));
+            if (!StringUtils.hasText(o.getSupplierName()) && o.getSupplierId() != null) {
+                o.setSupplierName(supplierMap.get(o.getSupplierId()));
+            }
+            if (!StringUtils.hasText(o.getWarehouseName()) && o.getWarehouseId() != null) {
+                o.setWarehouseName(warehouseMap.get(o.getWarehouseId()));
+            }
         }
     }
 
@@ -69,7 +104,7 @@ public class WmsPurchaseOrderServiceImpl extends ServiceImpl<WmsPurchaseOrderMap
         LambdaQueryWrapper<WmsPurchaseOrder> wrapper = buildQueryWrapper(req);
         wrapper.orderByDesc(WmsPurchaseOrder::getCreateTime);
         Page<WmsPurchaseOrder> page = this.page(new Page<>(req.getPageNum(), req.getPageSize()), wrapper);
-        fillUserNames(page.getRecords());
+        fillPurchaseNames(page.getRecords());
         return new PageRsp<>(page.getTotal(), page.getRecords(), req.getPageNum(), req.getPageSize());
     }
 
@@ -80,7 +115,7 @@ public class WmsPurchaseOrderServiceImpl extends ServiceImpl<WmsPurchaseOrderMap
         if (order == null) {
             throw new BizException(ResultCode.DATA_NOT_FOUND);
         }
-        fillUserNames(java.util.Collections.singletonList(order));
+        fillPurchaseNames(java.util.Collections.singletonList(order));
         rsp.setOrder(order);
         rsp.setItems(itemMapper.selectByPurchaseId(id));
         rsp.setStatusLogs(statusLogMapper.selectByBillId(id));
