@@ -42,6 +42,7 @@ public class WmsPurchaseOrderServiceImpl extends ServiceImpl<WmsPurchaseOrderMap
     private final com.example.wms.system.service.SysUserService sysUserService;
     private final com.example.wms.business.basedata.supplier.service.WmsSupplierService supplierService;
     private final com.example.wms.business.basedata.warehouse.service.WmsWarehouseService warehouseService;
+    private final com.example.wms.business.common.SkuMasterDataLoader skuMasterDataLoader;
 
     /**
      * 批量回填采购单的供应商名、仓库名、创建人、审核人、采购员
@@ -117,9 +118,26 @@ public class WmsPurchaseOrderServiceImpl extends ServiceImpl<WmsPurchaseOrderMap
         }
         fillPurchaseNames(java.util.Collections.singletonList(order));
         rsp.setOrder(order);
-        rsp.setItems(itemMapper.selectByPurchaseId(id));
+        List<WmsPurchaseOrderItem> items = itemMapper.selectByPurchaseId(id);
+        fillItemColor(items);
+        rsp.setItems(items);
         rsp.setStatusLogs(statusLogMapper.selectByBillId(id));
         return rsp;
+    }
+
+    /**
+     * 按SKU主数据批量补齐明细颜色（颜色不落库，仅查询展示用）
+     * @param items 采购单明细
+     */
+    private void fillItemColor(List<WmsPurchaseOrderItem> items) {
+        java.util.Map<Long, com.example.wms.business.common.SkuMasterDataLoader.SkuMaster> master =
+                skuMasterDataLoader.load(items.stream().map(WmsPurchaseOrderItem::getSkuId).toList());
+        for (WmsPurchaseOrderItem item : items) {
+            com.example.wms.business.common.SkuMasterDataLoader.SkuMaster md = master.get(item.getSkuId());
+            if (md != null) {
+                item.setColor(md.color);
+            }
+        }
     }
 
     @Override

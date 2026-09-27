@@ -58,6 +58,10 @@ public class WmsStockOutItem implements Serializable, ChangeItem {
     /** 规格描述 */
     private String specText;
 
+    /** 颜色（非数据库字段，查询时按SKU主数据补齐） */
+    @TableField(exist = false)
+    private String color;
+
     /** 计量单位ID */
     @JsonSerialize(using = ToStringSerializer.class)
     private Long unitId;

@@ -166,6 +166,7 @@
           <el-table-column label="内部编码" prop="innerCode" width="110" />
           <el-table-column prop="skuName" label="名称" min-width="140" show-overflow-tooltip />
           <el-table-column prop="specText" label="规格" width="120" show-overflow-tooltip />
+          <el-table-column prop="color" label="颜色" width="80" show-overflow-tooltip />
           <el-table-column prop="unitName" label="单位" width="70" align="center" />
           <el-table-column label="数量" width="110">
             <template #default="{ row }">
@@ -248,6 +249,7 @@
           <el-table-column label="内部编码" prop="innerCode" width="110" />
           <el-table-column prop="skuName" label="名称" min-width="140" show-overflow-tooltip />
           <el-table-column prop="specText" label="规格" width="120" show-overflow-tooltip />
+          <el-table-column prop="color" label="颜色" width="80" show-overflow-tooltip />
           <el-table-column prop="unitName" label="单位" width="70" align="center" />
           <el-table-column prop="quantity" label="数量" width="90" align="right" />
           <el-table-column label="采购价" width="100" align="right">
@@ -474,6 +476,7 @@ function addDetailRow() {
     skuCode: '',
     skuName: '',
     specText: '',
+    color: '',
     unitName: '',
     quantity: 1,
     purchasePrice: 0,
@@ -517,6 +520,7 @@ function onSkuSelect(row: any) {
     row.innerCode = sku.innerCode
     row.skuName = sku.skuName
     row.specText = sku.specText
+    row.color = sku.color
     row.unitName = sku.unitName
     row.purchasePrice = sku.defaultCost || 0
     calcRowSubtotal(row)

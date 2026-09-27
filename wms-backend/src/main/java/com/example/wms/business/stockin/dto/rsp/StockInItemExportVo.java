@@ -58,6 +58,10 @@ public class StockInItemExportVo implements Serializable {
     @ColumnWidth(18)
     private String specText;
 
+    @ExcelProperty("颜色")
+    @ColumnWidth(10)
+    private String color;
+
     @ExcelProperty("单位")
     @ColumnWidth(8)
     private String unitName;

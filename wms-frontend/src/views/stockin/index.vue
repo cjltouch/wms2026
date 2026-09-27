@@ -162,6 +162,8 @@
           <el-table-column prop="skuCode" label="编码" width="110" />
           <el-table-column label="内部编码" prop="innerCode" width="110" />
           <el-table-column prop="skuName" label="名称" min-width="130" show-overflow-tooltip />
+          <el-table-column prop="specText" label="规格" width="120" show-overflow-tooltip />
+          <el-table-column prop="color" label="颜色" width="80" show-overflow-tooltip />
           <el-table-column label="单位" prop="unitName" width="60" />
           <el-table-column label="预期数量" width="110">
             <template #default="{ row }">
@@ -243,6 +245,8 @@
           <el-table-column prop="skuCode" label="编码" width="110" />
           <el-table-column label="内部编码" prop="innerCode" width="110" />
           <el-table-column prop="skuName" label="名称" min-width="130" show-overflow-tooltip />
+          <el-table-column prop="specText" label="规格" width="120" show-overflow-tooltip />
+          <el-table-column prop="color" label="颜色" width="80" show-overflow-tooltip />
           <el-table-column label="单位" prop="unitName" width="60" />
           <el-table-column prop="expectedQty" label="预期数量" width="100" align="right" />
           <el-table-column prop="actualQty" label="实际数量" width="100" align="right" />
@@ -509,6 +513,8 @@ function addDetailRow() {
     skuId: undefined,
     skuCode: '',
     skuName: '',
+    specText: '',
+    color: '',
     expectedQty: 0,
     actualQty: 0,
     diffQty: 0,
@@ -547,6 +553,7 @@ function onSkuSelect(row: any) {
     row.innerCode = sku.innerCode
     row.skuName = sku.skuName
     row.specText = sku.specText
+    row.color = sku.color
     row.unitId = sku.unitId
     row.unitName = sku.unitName
     row.costPrice = sku.defaultCost || 0

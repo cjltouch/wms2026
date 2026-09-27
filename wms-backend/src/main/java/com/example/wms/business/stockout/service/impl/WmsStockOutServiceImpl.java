@@ -136,6 +136,8 @@ public class WmsStockOutServiceImpl extends ServiceImpl<WmsStockOutMapper, WmsSt
             if (!StringUtils.hasText(item.getSpecText())) {
                 item.setSpecText(md.specText);
             }
+            // 颜色为非持久字段，直接按SKU主数据回填
+            item.setColor(md.color);
             if (!StringUtils.hasText(item.getSkuName())) {
                 item.setSkuName(md.skuName);
             }

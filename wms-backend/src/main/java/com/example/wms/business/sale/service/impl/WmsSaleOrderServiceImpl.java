@@ -54,6 +54,7 @@ public class WmsSaleOrderServiceImpl extends ServiceImpl<WmsSaleOrderMapper, Wms
     private final WmsStockOutMapper stockOutMapper;
     private final WmsStockOutItemMapper stockOutItemMapper;
     private final InventoryChangeHandlerFactory inventoryHandlerFactory;
+    private final com.example.wms.business.common.SkuMasterDataLoader skuMasterDataLoader;
 
     @Override
     public PageRsp<WmsSaleOrder> pageSale(SalePageReq req) {
@@ -71,9 +72,26 @@ public class WmsSaleOrderServiceImpl extends ServiceImpl<WmsSaleOrderMapper, Wms
             throw new BizException(ResultCode.DATA_NOT_FOUND);
         }
         rsp.setOrder(order);
-        rsp.setItems(itemMapper.selectBySaleId(id));
+        List<WmsSaleOrderItem> items = itemMapper.selectBySaleId(id);
+        fillItemColor(items);
+        rsp.setItems(items);
         rsp.setStatusLogs(statusLogMapper.selectByBillId(id));
         return rsp;
+    }
+
+    /**
+     * 按SKU主数据批量补齐明细颜色（颜色不落库，仅查询展示用）
+     * @param items 销售单明细
+     */
+    private void fillItemColor(List<WmsSaleOrderItem> items) {
+        java.util.Map<Long, com.example.wms.business.common.SkuMasterDataLoader.SkuMaster> master =
+                skuMasterDataLoader.load(items.stream().map(WmsSaleOrderItem::getSkuId).toList());
+        for (WmsSaleOrderItem item : items) {
+            com.example.wms.business.common.SkuMasterDataLoader.SkuMaster md = master.get(item.getSkuId());
+            if (md != null) {
+                item.setColor(md.color);
+            }
+        }
     }
 
     @Override

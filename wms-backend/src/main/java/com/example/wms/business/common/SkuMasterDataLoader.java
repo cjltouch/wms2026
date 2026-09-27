@@ -41,6 +41,8 @@ public class SkuMasterDataLoader {
     public static class SkuMaster {
         /** 规格描述 */
         public String specText;
+        /** 颜色 */
+        public String color;
         /** 商品名称 */
         public String skuName;
         /** 计量单位名称 */
@@ -91,6 +93,10 @@ public class SkuMasterDataLoader {
             m.specText = sku.getSpecText() != null ? sku.getSpecText().trim() : null;
             if (!StringUtils.hasText(m.specText)) {
                 m.specText = null;
+            }
+            m.color = sku.getColor() != null ? sku.getColor().trim() : null;
+            if (!StringUtils.hasText(m.color)) {
+                m.color = null;
             }
             m.skuName = StringUtils.hasText(sku.getSkuName()) ? sku.getSkuName().trim() : null;
             WmsGoodsSpu spu = sku.getSpuId() != null ? spuMap.get(sku.getSpuId()) : null;

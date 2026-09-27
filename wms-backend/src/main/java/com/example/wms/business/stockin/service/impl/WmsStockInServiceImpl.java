@@ -157,6 +157,8 @@ public class WmsStockInServiceImpl extends ServiceImpl<WmsStockInMapper, WmsStoc
             if (!StringUtils.hasText(item.getSpecText())) {
                 item.setSpecText(md.specText);
             }
+            // 颜色为非持久字段，直接按SKU主数据回填
+            item.setColor(md.color);
             if (!StringUtils.hasText(item.getSkuName())) {
                 item.setSkuName(md.skuName);
             }
@@ -195,6 +197,9 @@ public class WmsStockInServiceImpl extends ServiceImpl<WmsStockInMapper, WmsStoc
         rsp.setOrder(order);
 
         List<WmsPurchaseOrderItem> purchaseItems = purchaseOrderItemMapper.selectByPurchaseId(purchase.getPurchaseId());
+        // 颜色不落库，按采购明细SKU从主数据批量带出
+        Map<Long, com.example.wms.business.common.SkuMasterDataLoader.SkuMaster> srcMaster =
+                skuMasterDataLoader.load(purchaseItems.stream().map(WmsPurchaseOrderItem::getSkuId).toList());
         List<WmsStockInItem> stockInItems = new ArrayList<>();
         int lineNo = 1;
         for (WmsPurchaseOrderItem pi : purchaseItems) {
@@ -211,6 +216,8 @@ public class WmsStockInServiceImpl extends ServiceImpl<WmsStockInMapper, WmsStoc
             item.setInnerCode(pi.getInnerCode());
             item.setSkuName(pi.getSkuName());
             item.setSpecText(pi.getSpecText());
+            com.example.wms.business.common.SkuMasterDataLoader.SkuMaster srcMd = srcMaster.get(pi.getSkuId());
+            item.setColor(srcMd != null ? srcMd.color : null);
             item.setUnitId(pi.getUnitId());
             item.setUnitName(pi.getUnitName());
             item.setExpectedQty(remaining);
@@ -627,6 +634,7 @@ public class WmsStockInServiceImpl extends ServiceImpl<WmsStockInMapper, WmsStoc
             vo.setInnerCode(item.getInnerCode());
             vo.setSkuName(item.getSkuName());
             vo.setSpecText(item.getSpecText());
+            vo.setColor(item.getColor());
             vo.setUnitName(item.getUnitName());
             vo.setExpectedQty(item.getExpectedQty());
             vo.setActualQty(item.getActualQty());

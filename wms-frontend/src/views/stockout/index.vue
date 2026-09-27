@@ -150,6 +150,8 @@
           <el-table-column prop="skuCode" label="编码" width="120" />
           <el-table-column label="内部编码" prop="innerCode" width="110" />
           <el-table-column label="商品名称" min-width="150" prop="skuName" show-overflow-tooltip />
+          <el-table-column prop="specText" label="规格" width="120" show-overflow-tooltip />
+          <el-table-column prop="color" label="颜色" width="80" show-overflow-tooltip />
           <el-table-column label="单位" prop="unitName" width="60" />
           <el-table-column label="应出数量" width="100">
             <template #default="{ row }">
@@ -211,6 +213,8 @@
         <el-table-column prop="skuCode" label="商品编码" min-width="120" show-overflow-tooltip />
         <el-table-column label="内部编码" prop="innerCode" width="110" />
         <el-table-column prop="skuName" label="商品名称" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="specText" label="规格" width="120" show-overflow-tooltip />
+        <el-table-column prop="color" label="颜色" width="80" show-overflow-tooltip />
         <el-table-column label="单位" prop="unitName" width="60" />
         <el-table-column label="应出数量" width="90" align="right" prop="expectedQty" />
         <el-table-column label="实出数量" width="90" align="right" prop="actualQty" />
@@ -493,7 +497,7 @@ async function handleEdit(row: any) {
 }
 
 function addDetailRow() {
-  form.items.push({ skuId: undefined, skuCode: '', skuName: '', expectedQty: 0, actualQty: 0, costPrice: 0, salePrice: 0, subtotalSale: 0, subtotalCost: 0 })
+  form.items.push({ skuId: undefined, skuCode: '', skuName: '', specText: '', color: '', expectedQty: 0, actualQty: 0, costPrice: 0, salePrice: 0, subtotalSale: 0, subtotalCost: 0 })
 }
 
 const skuOptions = ref<any[]>([])
@@ -518,6 +522,8 @@ function onSkuSelect(row: any) {
     row.skuCode = sku.skuCode
     row.innerCode = sku.innerCode
     row.skuName = sku.skuName
+    row.specText = sku.specText
+    row.color = sku.color
     row.unitId = sku.unitId
     row.unitName = sku.unitName
     row.costPrice = sku.defaultCost || 0

@@ -43,6 +43,7 @@ public class WmsLossOrderServiceImpl extends ServiceImpl<WmsLossOrderMapper, Wms
     private final WmsLossOrderItemMapper itemMapper;
     private final WmsLossStatusLogMapper statusLogMapper;
     private final InventoryChangeHandlerFactory inventoryHandlerFactory;
+    private final com.example.wms.business.common.SkuMasterDataLoader skuMasterDataLoader;
 
     @Override
     public PageRsp<WmsLossOrder> pageLoss(LossPageReq req) {
@@ -60,9 +61,26 @@ public class WmsLossOrderServiceImpl extends ServiceImpl<WmsLossOrderMapper, Wms
             throw new BizException(ResultCode.DATA_NOT_FOUND);
         }
         rsp.setOrder(order);
-        rsp.setItems(itemMapper.selectByLossId(id));
+        List<WmsLossOrderItem> items = itemMapper.selectByLossId(id);
+        fillItemColor(items);
+        rsp.setItems(items);
         rsp.setStatusLogs(statusLogMapper.selectByBillId(id));
         return rsp;
+    }
+
+    /**
+     * 按SKU主数据批量补齐明细颜色（颜色不落库，仅查询展示用）
+     * @param items 报损单明细
+     */
+    private void fillItemColor(List<WmsLossOrderItem> items) {
+        java.util.Map<Long, com.example.wms.business.common.SkuMasterDataLoader.SkuMaster> master =
+                skuMasterDataLoader.load(items.stream().map(WmsLossOrderItem::getSkuId).toList());
+        for (WmsLossOrderItem item : items) {
+            com.example.wms.business.common.SkuMasterDataLoader.SkuMaster md = master.get(item.getSkuId());
+            if (md != null) {
+                item.setColor(md.color);
+            }
+        }
     }
 
     @Override
