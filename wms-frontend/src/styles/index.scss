@@ -28,6 +28,32 @@ a {
   background: #f1f1f1;
 }
 
+/* ===== 移动端键盘防变形：固定视口高度，内容内部滚动 ===== */
+.m-dashboard,
+.m-list,
+.m-query,
+.m-inv,
+.m-office {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 移动端弹窗内表单防止键盘压缩 */
+:root {
+  --van-popup-height: 80vh;
+}
+
+/* 防止 iOS 输入框聚焦缩放（font-size < 16px 会触发缩放） */
+.van-search .van-field__control,
+.van-field .van-field__control {
+  font-size: 16px;
+}
+
 /* 通用样式 */
 .page-container {
   padding: 16px;

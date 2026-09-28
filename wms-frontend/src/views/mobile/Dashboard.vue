@@ -243,9 +243,13 @@ function goQuick(it: { key: string; text: string }) {
       showToast(`${it.text} 作业页即将上线`)
       break
     case 'query':
+      router.push('/mobile/query')
+      break
     case 'inventory':
+      router.push('/mobile/inventory')
+      break
     case 'office':
-      showToast(`${it.text} 即将上线`)
+      router.push('/mobile/office')
       break
     default:
       showToast(it.text)

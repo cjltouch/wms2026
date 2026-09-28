@@ -36,6 +36,24 @@ export const constantRoutes: RouteRecordRaw[] = [
     meta: { title: '审批中心' }
   },
   {
+    path: '/mobile/query',
+    name: 'MobileQueryCenter',
+    component: () => import('@/views/mobile/QueryCenter.vue'),
+    meta: { title: '查询中心' }
+  },
+  {
+    path: '/mobile/inventory',
+    name: 'MobileInventoryQuery',
+    component: () => import('@/views/mobile/InventoryQuery.vue'),
+    meta: { title: '库存查询' }
+  },
+  {
+    path: '/mobile/office',
+    name: 'MobileOfficeRecord',
+    component: () => import('@/views/mobile/OfficeRecord.vue'),
+    meta: { title: '用品登记' }
+  },
+  {
     path: '/mobile/approval/:type/:id',
     name: 'MobileApprovalDetail',
     component: () => import('@/views/mobile/ApprovalDetail.vue'),
