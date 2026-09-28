@@ -110,6 +110,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="specText" label="规格" min-width="90" />
+        <el-table-column prop="color" label="颜色" width="80" />
         <el-table-column prop="barcode" label="条码" min-width="110" />
         <el-table-column label="成本价" width="90" align="right">
           <template #default="{ row }">¥{{ row.defaultCost ?? 0 }}</template>
