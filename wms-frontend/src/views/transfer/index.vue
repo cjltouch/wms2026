@@ -144,7 +144,12 @@
                 style="width: 100%"
                 @change="() => onSkuSelect(row)"
               >
-                <el-option v-for="s in skuOptions" :key="s.skuId" :label="s.skuName + (s.skuCode ? ' (' + s.skuCode + ')' : '')" :value="s.skuId" />
+                <el-option v-for="s in skuOptions" :key="s.skuId" :label="s.skuName + (s.specText ? ' ' + s.specText : '') + (s.color ? '/' + s.color : '') + (s.skuCode ? ' (' + s.skuCode + ')' : '')" :value="s.skuId">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>{{ s.skuName }}<span v-if="s.specText" style="color: #909399; font-size: 12px; margin-left: 4px;">{{ s.specText }}</span><span v-if="s.color" style="color: #67c23a; font-size: 12px; margin-left: 2px;">/{{ s.color }}</span></span>
+                    <span style="color: #c0c4cc; font-size: 12px;">{{ s.skuCode }}</span>
+                  </div>
+                </el-option>
               </el-select>
             </template>
           </el-table-column>
