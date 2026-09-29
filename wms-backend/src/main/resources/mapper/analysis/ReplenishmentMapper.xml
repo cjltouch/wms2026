@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.wms.business.analysis.mapper.ReplenishmentMapper">
+
+    <resultMap id="replenishmentMap" type="com.example.wms.business.analysis.dto.rsp.ReplenishmentRsp">
+        <result property="skuId" column="sku_id" javaType="java.lang.Long"/>
+        <result property="skuCode" column="sku_code" javaType="java.lang.String"/>
+        <result property="skuName" column="sku_name" javaType="java.lang.String"/>
+        <result property="specText" column="spec_text" javaType="java.lang.String"/>
+        <result property="color" column="color" javaType="java.lang.String"/>
+        <result property="innerCode" column="inner_code" javaType="java.lang.String"/>
+        <result property="historyQty" column="history_qty" javaType="java.lang.Integer"/>
+        <result property="availableQty" column="available_qty" javaType="java.lang.Integer"/>
+        <result property="defaultCost" column="default_cost" javaType="java.math.BigDecimal"/>
+    </resultMap>
+
+    <!-- 历史出库汇总子查询：仅统计已审核通过（status=4）的出库单，按审核时间过滤 -->
+    <sql id="historySubQuery">
+        SELECT i.sku_id, SUM(i.actual_qty) AS history_qty
+        FROM wms_stock_out_item i
+        INNER JOIN wms_stock_out o ON i.stock_out_id = o.stock_out_id
+            AND o.deleted = 0 AND o.status = 4
+        WHERE i.deleted = 0
+          AND o.audit_time &gt;= DATE_SUB(NOW(), INTERVAL #{req.historyDays} DAY)
+        <if test="req.warehouseId != null">
+          AND o.warehouse_id = #{req.warehouseId}
+        </if>
+        GROUP BY i.sku_id
+    </sql>
+
+    <!-- 可用库存汇总子查询 -->
+    <sql id="inventorySubQuery">
+        SELECT sku_id, SUM(available_qty) AS available_qty
+        FROM wms_inventory
+        WHERE deleted = 0
+        <if test="req.warehouseId != null">
+          AND warehouse_id = #{req.warehouseId}
+        </if>
+        GROUP BY sku_id
+    </sql>
+
+    <!-- SKU维度：历史周期有出库记录的SKU才纳入分析 -->
+    <select id="selectBySku" resultMap="replenishmentMap">
+        SELECT
+            s.sku_id,
+            s.sku_code,
+            s.sku_name,
+            s.spec_text,
+            s.color,
+            s.inner_code,
+            s.cost_price AS default_cost,
+            h.history_qty,
+            IFNULL(inv.available_qty, 0) AS available_qty
+        FROM wms_goods_sku s
+        INNER JOIN (<include refid="historySubQuery"/>) h ON h.sku_id = s.sku_id
+        LEFT JOIN (<include refid="inventorySubQuery"/>) inv ON inv.sku_id = s.sku_id
+        WHERE s.deleted = 0
+        <if test="req.categoryId != null">
+          AND s.category_id = #{req.categoryId}
+        </if>
+    </select>
+
+    <!-- 内部编码维度：同innerCode聚合，skuName取SPU名，无innerCode的SKU按自身独立成行 -->
+    <select id="selectByInnerCode" resultMap="replenishmentMap">
+        SELECT
+            MIN(s.sku_id) AS sku_id,
+            MIN(s.sku_code) AS sku_code,
+            COALESCE(MAX(p.spu_name), MIN(s.sku_name)) AS sku_name,
+            MIN(s.spec_text) AS spec_text,
+            CASE WHEN COUNT(DISTINCT s.color) &gt; 1 THEN '多色' ELSE MIN(s.color) END AS color,
+            MAX(s.inner_code) AS inner_code,
+            MAX(s.cost_price) AS default_cost,
+            SUM(h.history_qty) AS history_qty,
+            SUM(IFNULL(inv.available_qty, 0)) AS available_qty
+        FROM wms_goods_sku s
+        INNER JOIN (<include refid="historySubQuery"/>) h ON h.sku_id = s.sku_id
+        LEFT JOIN (<include refid="inventorySubQuery"/>) inv ON inv.sku_id = s.sku_id
+        LEFT JOIN wms_goods_spu p ON s.spu_id = p.spu_id AND p.deleted = 0
+        WHERE s.deleted = 0
+        <if test="req.categoryId != null">
+          AND s.category_id = #{req.categoryId}
+        </if>
+        GROUP BY IFNULL(NULLIF(s.inner_code, ''), CONCAT('__SKU__', s.sku_id))
+    </select>
+
+</mapper>

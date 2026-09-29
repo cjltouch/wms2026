@@ -271,6 +271,19 @@ export const constantRoutes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/analysis',
+    component: Layout,
+    meta: { title: '智能分析', icon: 'DataAnalysis' },
+    children: [
+      {
+        path: 'replenishment',
+        name: 'Replenishment',
+        component: () => import('@/views/analysis/replenishment.vue'),
+        meta: { title: '智能补货' }
+      }
+    ]
+  },
+  {
     path: '/system',
     component: Layout,
     meta: { title: '系统管理', icon: 'Setting' },
