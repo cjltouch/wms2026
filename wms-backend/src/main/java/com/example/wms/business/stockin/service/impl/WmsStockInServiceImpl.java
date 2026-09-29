@@ -614,6 +614,8 @@ public class WmsStockInServiceImpl extends ServiceImpl<WmsStockInMapper, WmsStoc
                         .in(com.example.wms.business.stockin.entity.WmsStockInItem::getStockInId, orderIds)
                         .orderByAsc(com.example.wms.business.stockin.entity.WmsStockInItem::getStockInId)
                         .orderByAsc(com.example.wms.business.stockin.entity.WmsStockInItem::getLineNo));
+        // 颜色为非持久字段，导出前按SKU主数据回填
+        enrichItemMasterData(items, null);
         java.util.Map<Long, WmsStockIn> orderMap = orders.stream()
                 .collect(java.util.stream.Collectors.toMap(WmsStockIn::getStockInId, o -> o));
         java.time.format.DateTimeFormatter dtFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

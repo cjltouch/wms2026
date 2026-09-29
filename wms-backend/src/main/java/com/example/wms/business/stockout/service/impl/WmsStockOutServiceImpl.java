@@ -708,6 +708,8 @@ public class WmsStockOutServiceImpl extends ServiceImpl<WmsStockOutMapper, WmsSt
                         .in(WmsStockOutItem::getStockOutId, orderIds)
                         .orderByAsc(WmsStockOutItem::getStockOutId)
                         .orderByAsc(WmsStockOutItem::getLineNo));
+        // 颜色为非持久字段，导出前按SKU主数据回填
+        enrichItemMasterData(items);
         // 订单ID -> 订单映射
         Map<Long, WmsStockOut> orderMap = orders.stream()
                 .collect(java.util.stream.Collectors.toMap(WmsStockOut::getStockOutId, o -> o));
@@ -728,6 +730,7 @@ public class WmsStockOutServiceImpl extends ServiceImpl<WmsStockOutMapper, WmsSt
             vo.setInnerCode(item.getInnerCode());
             vo.setSkuName(item.getSkuName());
             vo.setSpecText(item.getSpecText());
+            vo.setColor(item.getColor());
             vo.setUnitName(item.getUnitName());
             vo.setExpectedQty(item.getExpectedQty());
             vo.setActualQty(item.getActualQty());
